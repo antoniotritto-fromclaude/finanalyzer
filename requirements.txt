@@ -1,0 +1,41 @@
+# Core
+fastapi==0.109.0
+uvicorn==0.27.0
+pydantic==2.5.3
+python-dotenv==1.0.0
+
+# Data Analysis
+pandas==2.1.4
+numpy==1.26.3
+scipy==1.11.4
+
+# Financial Data
+yfinance==0.2.36
+pandas-datareader==0.10.0
+
+# Web Scraping
+requests==2.31.0
+beautifulsoup4==4.12.3
+lxml==5.1.0
+selenium==4.16.0
+
+# Portfolio Optimization
+PyPortfolioOpt==1.5.5
+cvxpy==1.4.2
+
+# Machine Learning & Predictions
+scikit-learn==1.4.0
+prophet==1.1.5
+statsmodels==0.14.1
+
+# Visualization
+plotly==5.18.0
+matplotlib==3.8.2
+seaborn==0.13.1
+
+# Frontend
+streamlit==1.30.0
+
+# Utilities
+python-dateutil==2.8.2
+pytz==2023.3
