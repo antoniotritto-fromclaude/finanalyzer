@@ -1,33 +1,22 @@
 """
-Yahoo Finance Data Collector V2 - Versione robusta con gestione errori
+Yahoo Finance Data Collector
+Raccoglie dati da Yahoo Finance usando yfinance
 """
-# Fix multitasking prima di importare yfinance
-import sys
-import os
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
-try:
-    import fix_multitasking
-except:
-    pass
-
 import yfinance as yf
 import pandas as pd
 from datetime import datetime, timedelta
-from typing import List, Dict, Optional
+from typing import List, Dict, Optional, Union
 import logging
-import time
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 
 class YahooFinanceCollector:
-    """Collector per dati da Yahoo Finance - Versione robusta"""
+    """Collector per dati da Yahoo Finance"""
 
     def __init__(self):
         self.cache = {}
-        # Configura yfinance per evitare 403
-        yf.set_tz_cache_location(os.path.join(os.path.dirname(__file__), ".cache"))
 
     def search_ticker(self, query: str, asset_type: Optional[str] = None) -> List[Dict]:
         """
@@ -41,31 +30,20 @@ class YahooFinanceCollector:
             Lista di risultati con informazioni base
         """
         try:
-            # Prova a scaricare direttamente il ticker
             ticker = yf.Ticker(query)
+            info = ticker.info
 
-            # Prova a ottenere dati storici come test
-            hist = ticker.history(period="5d")
-
-            if not hist.empty:
-                # Ticker valido
-                try:
-                    info = ticker.info
-                except:
-                    info = {}
-
+            if info and 'symbol' in info:
                 return [{
-                    'symbol': query,
-                    'name': info.get('longName', info.get('shortName', query)),
+                    'symbol': info.get('symbol', query),
+                    'name': info.get('longName', info.get('shortName', '')),
                     'type': info.get('quoteType', 'Unknown'),
                     'exchange': info.get('exchange', ''),
                     'currency': info.get('currency', ''),
                     'sector': info.get('sector', ''),
                     'industry': info.get('industry', ''),
                 }]
-
             return []
-
         except Exception as e:
             logger.error(f"Errore nella ricerca ticker {query}: {e}")
             return []
@@ -86,39 +64,20 @@ class YahooFinanceCollector:
             period: Periodo (1d, 5d, 1mo, 3mo, 6mo, 1y, 2y, 5y, 7y, 10y, ytd, max)
             start_date: Data inizio (YYYY-MM-DD)
             end_date: Data fine (YYYY-MM-DD)
-            interval: Intervallo
+            interval: Intervallo (1m, 2m, 5m, 15m, 30m, 60m, 90m, 1h, 1d, 5d, 1wk, 1mo, 3mo)
 
         Returns:
-            DataFrame con dati storici
+            DataFrame con dati storici (Open, High, Low, Close, Volume)
         """
         try:
             ticker = yf.Ticker(symbol)
 
-            # Retry logic per gestire errori temporanei
-            max_retries = 3
-            for attempt in range(max_retries):
-                try:
-                    if period:
-                        df = ticker.history(period=period, interval=interval, auto_adjust=True)
-                    else:
-                        df = ticker.history(start=start_date, end=end_date, interval=interval, auto_adjust=True)
+            if period:
+                df = ticker.history(period=period, interval=interval)
+            else:
+                df = ticker.history(start=start_date, end=end_date, interval=interval)
 
-                    if not df.empty:
-                        return df
-
-                    # Se empty, aspetta e riprova
-                    if attempt < max_retries - 1:
-                        time.sleep(1)
-
-                except Exception as e:
-                    logger.warning(f"Tentativo {attempt + 1} fallito per {symbol}: {e}")
-                    if attempt < max_retries - 1:
-                        time.sleep(2)
-                    else:
-                        raise
-
-            return pd.DataFrame()
-
+            return df
         except Exception as e:
             logger.error(f"Errore nel recupero dati storici per {symbol}: {e}")
             return pd.DataFrame()
@@ -135,38 +94,33 @@ class YahooFinanceCollector:
         """
         try:
             ticker = yf.Ticker(symbol)
-
-            # Prova prima a ottenere dati storici (più affidabile)
-            hist = ticker.history(period="5d")
-
-            if hist.empty:
-                return {'symbol': symbol, 'error': 'No data available'}
-
-            # Prova a ottenere info (potrebbe fallire)
-            try:
-                info = ticker.info
-            except:
-                info = {}
-
-            # Usa l'ultimo prezzo disponibile dai dati storici
-            last_price = hist['Close'].iloc[-1] if not hist.empty else 0
-            prev_close = hist['Close'].iloc[-2] if len(hist) > 1 else last_price
+            info = ticker.info
 
             return {
-                'symbol': symbol,
-                'name': info.get('longName', info.get('shortName', symbol)),
-                'type': info.get('quoteType', 'Unknown'),
+                'symbol': info.get('symbol', symbol),
+                'name': info.get('longName', info.get('shortName', '')),
+                'type': info.get('quoteType', ''),
                 'exchange': info.get('exchange', ''),
-                'currency': info.get('currency', 'USD'),
-                'current_price': last_price,
-                'previous_close': prev_close,
+                'currency': info.get('currency', ''),
+                'current_price': info.get('currentPrice', info.get('regularMarketPrice', 0)),
+                'previous_close': info.get('previousClose', 0),
+                'open': info.get('open', 0),
+                'day_high': info.get('dayHigh', 0),
+                'day_low': info.get('dayLow', 0),
+                'volume': info.get('volume', 0),
+                'market_cap': info.get('marketCap', 0),
+                'beta': info.get('beta', 0),
+                'pe_ratio': info.get('trailingPE', 0),
+                'dividend_yield': info.get('dividendYield', 0),
+                'fifty_two_week_high': info.get('fiftyTwoWeekHigh', 0),
+                'fifty_two_week_low': info.get('fiftyTwoWeekLow', 0),
                 'sector': info.get('sector', ''),
                 'industry': info.get('industry', ''),
+                'description': info.get('longBusinessSummary', ''),
             }
-
         except Exception as e:
             logger.error(f"Errore nel recupero info per {symbol}: {e}")
-            return {'symbol': symbol, 'error': str(e)}
+            return {}
 
     def get_multiple_tickers_data(
         self,
@@ -188,19 +142,51 @@ class YahooFinanceCollector:
         result = {}
 
         for symbol in symbols:
-            logger.info(f"Scaricamento dati per {symbol}...")
             df = self.get_historical_data(symbol, period=period, interval=interval)
-
             if not df.empty:
                 result[symbol] = df
-                logger.info(f"  ✅ {symbol}: {len(df)} righe")
             else:
-                logger.warning(f"  ❌ {symbol}: Nessun dato")
-
-            # Rate limiting per evitare 403
-            time.sleep(0.5)
+                logger.warning(f"Nessun dato trovato per {symbol}")
 
         return result
+
+    def get_dividends(self, symbol: str) -> pd.DataFrame:
+        """
+        Ottiene la storia dei dividendi
+
+        Args:
+            symbol: Simbolo del ticker
+
+        Returns:
+            DataFrame con dividendi
+        """
+        try:
+            ticker = yf.Ticker(symbol)
+            return ticker.dividends
+        except Exception as e:
+            logger.error(f"Errore nel recupero dividendi per {symbol}: {e}")
+            return pd.DataFrame()
+
+    def get_financials(self, symbol: str) -> Dict[str, pd.DataFrame]:
+        """
+        Ottiene i dati finanziari di un'azienda
+
+        Args:
+            symbol: Simbolo del ticker
+
+        Returns:
+            Dizionario con income_statement, balance_sheet, cash_flow
+        """
+        try:
+            ticker = yf.Ticker(symbol)
+            return {
+                'income_statement': ticker.income_stmt,
+                'balance_sheet': ticker.balance_sheet,
+                'cash_flow': ticker.cashflow,
+            }
+        except Exception as e:
+            logger.error(f"Errore nel recupero dati finanziari per {symbol}: {e}")
+            return {}
 
 
 # Funzioni di utilità

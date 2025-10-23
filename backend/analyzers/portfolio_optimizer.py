@@ -1,11 +1,11 @@
 """
-Portfolio Optimizer usando la teoria di Markowitz
+Portfolio Optimizer semplificato - Senza dipendenze da PyPortfolioOpt
+Implementazione diretta della teoria di Markowitz
 """
 import pandas as pd
 import numpy as np
 from typing import Dict, List, Tuple, Optional
-from pypfopt import EfficientFrontier, risk_models, expected_returns
-from pypfopt.discrete_allocation import DiscreteAllocation, get_latest_prices
+from scipy.optimize import minimize
 import logging
 
 logging.basicConfig(level=logging.INFO)
@@ -26,6 +26,7 @@ class PortfolioOptimizer:
         self.returns = None
         self.mu = None  # Expected returns
         self.S = None   # Covariance matrix
+        self.symbols = list(prices_df.columns)
 
     def calculate_returns(self) -> pd.DataFrame:
         """
@@ -42,20 +43,16 @@ class PortfolioOptimizer:
         Calcola i rendimenti attesi
 
         Args:
-            method: Metodo di calcolo (mean_historical_return, ema_historical_return, capm_return)
+            method: Metodo di calcolo
 
         Returns:
             Serie con rendimenti attesi per ogni asset
         """
-        if method == "mean_historical_return":
-            self.mu = expected_returns.mean_historical_return(self.prices)
-        elif method == "ema_historical_return":
-            self.mu = expected_returns.ema_historical_return(self.prices)
-        elif method == "capm_return":
-            self.mu = expected_returns.capm_return(self.prices)
-        else:
-            self.mu = expected_returns.mean_historical_return(self.prices)
+        if self.returns is None:
+            self.calculate_returns()
 
+        # Rendimenti medi annualizzati
+        self.mu = self.returns.mean() * 252
         return self.mu
 
     def calculate_covariance_matrix(self, method: str = "sample_cov") -> pd.DataFrame:
@@ -63,25 +60,58 @@ class PortfolioOptimizer:
         Calcola la matrice di covarianza
 
         Args:
-            method: Metodo di calcolo (sample_cov, semicovariance, exp_cov, ledoit_wolf, oracle_approximating)
+            method: Metodo di calcolo
 
         Returns:
             Matrice di covarianza
         """
-        if method == "sample_cov":
-            self.S = risk_models.sample_cov(self.prices)
-        elif method == "semicovariance":
-            self.S = risk_models.semicovariance(self.prices)
-        elif method == "exp_cov":
-            self.S = risk_models.exp_cov(self.prices)
-        elif method == "ledoit_wolf":
-            self.S = risk_models.CovarianceShrinkage(self.prices).ledoit_wolf()
-        elif method == "oracle_approximating":
-            self.S = risk_models.CovarianceShrinkage(self.prices).oracle_approximating()
-        else:
-            self.S = risk_models.sample_cov(self.prices)
+        if self.returns is None:
+            self.calculate_returns()
 
+        # Covarianza annualizzata
+        self.S = self.returns.cov() * 252
         return self.S
+
+    def _portfolio_stats(self, weights: np.ndarray) -> Tuple[float, float, float]:
+        """
+        Calcola statistiche del portafoglio
+
+        Args:
+            weights: Array dei pesi
+
+        Returns:
+            Tuple (rendimento, volatilità, sharpe ratio)
+        """
+        portfolio_return = np.dot(weights, self.mu)
+        portfolio_volatility = np.sqrt(np.dot(weights.T, np.dot(self.S, weights)))
+        sharpe_ratio = portfolio_return / portfolio_volatility if portfolio_volatility > 0 else 0
+        return portfolio_return, portfolio_volatility, sharpe_ratio
+
+    def _neg_sharpe_ratio(self, weights: np.ndarray, risk_free_rate: float = 0.02) -> float:
+        """
+        Calcola lo Sharpe Ratio negativo (per minimizzazione)
+
+        Args:
+            weights: Array dei pesi
+            risk_free_rate: Tasso risk-free
+
+        Returns:
+            Sharpe ratio negativo
+        """
+        portfolio_return, portfolio_volatility, _ = self._portfolio_stats(weights)
+        return -(portfolio_return - risk_free_rate) / portfolio_volatility if portfolio_volatility > 0 else 0
+
+    def _portfolio_volatility(self, weights: np.ndarray) -> float:
+        """
+        Calcola la volatilità del portafoglio
+
+        Args:
+            weights: Array dei pesi
+
+        Returns:
+            Volatilità
+        """
+        return np.sqrt(np.dot(weights.T, np.dot(self.S, weights)))
 
     def optimize_max_sharpe(self, risk_free_rate: float = 0.02) -> Dict:
         """
@@ -98,17 +128,41 @@ class PortfolioOptimizer:
         if self.S is None:
             self.calculate_covariance_matrix()
 
-        ef = EfficientFrontier(self.mu, self.S)
-        weights = ef.max_sharpe(risk_free_rate=risk_free_rate)
-        cleaned_weights = ef.clean_weights()
+        n_assets = len(self.symbols)
 
-        performance = ef.portfolio_performance(risk_free_rate=risk_free_rate)
+        # Vincoli e bounds
+        constraints = ({'type': 'eq', 'fun': lambda x: np.sum(x) - 1})  # Pesi sommano a 1
+        bounds = tuple((0, 1) for _ in range(n_assets))  # Pesi tra 0 e 1
+        initial_weights = np.array([1/n_assets] * n_assets)  # Pesi uguali iniziali
+
+        # Ottimizzazione
+        result = minimize(
+            self._neg_sharpe_ratio,
+            initial_weights,
+            args=(risk_free_rate,),
+            method='SLSQP',
+            bounds=bounds,
+            constraints=constraints
+        )
+
+        if not result.success:
+            logger.warning(f"Ottimizzazione non convergente: {result.message}")
+
+        # Calcola performance
+        weights = result.x
+        portfolio_return, portfolio_volatility, sharpe_ratio = self._portfolio_stats(weights)
+
+        # Pulisci pesi (rimuovi molto piccoli)
+        cleaned_weights = {}
+        for symbol, weight in zip(self.symbols, weights):
+            if weight > 0.01:  # Solo pesi > 1%
+                cleaned_weights[symbol] = round(weight, 4)
 
         return {
             'weights': cleaned_weights,
-            'expected_return': performance[0],
-            'volatility': performance[1],
-            'sharpe_ratio': performance[2]
+            'expected_return': portfolio_return,
+            'volatility': portfolio_volatility,
+            'sharpe_ratio': sharpe_ratio
         }
 
     def optimize_min_volatility(self) -> Dict:
@@ -123,45 +177,36 @@ class PortfolioOptimizer:
         if self.S is None:
             self.calculate_covariance_matrix()
 
-        ef = EfficientFrontier(self.mu, self.S)
-        weights = ef.min_volatility()
-        cleaned_weights = ef.clean_weights()
+        n_assets = len(self.symbols)
 
-        performance = ef.portfolio_performance()
+        # Vincoli e bounds
+        constraints = ({'type': 'eq', 'fun': lambda x: np.sum(x) - 1})
+        bounds = tuple((0, 1) for _ in range(n_assets))
+        initial_weights = np.array([1/n_assets] * n_assets)
 
-        return {
-            'weights': cleaned_weights,
-            'expected_return': performance[0],
-            'volatility': performance[1],
-            'sharpe_ratio': performance[2]
-        }
+        # Ottimizzazione
+        result = minimize(
+            self._portfolio_volatility,
+            initial_weights,
+            method='SLSQP',
+            bounds=bounds,
+            constraints=constraints
+        )
 
-    def optimize_efficient_risk(self, target_volatility: float) -> Dict:
-        """
-        Ottimizza per un target di volatilità
+        weights = result.x
+        portfolio_return, portfolio_volatility, sharpe_ratio = self._portfolio_stats(weights)
 
-        Args:
-            target_volatility: Volatilità target (es. 0.15 per 15%)
-
-        Returns:
-            Dizionario con pesi ottimali e performance
-        """
-        if self.mu is None:
-            self.calculate_expected_returns()
-        if self.S is None:
-            self.calculate_covariance_matrix()
-
-        ef = EfficientFrontier(self.mu, self.S)
-        weights = ef.efficient_risk(target_volatility)
-        cleaned_weights = ef.clean_weights()
-
-        performance = ef.portfolio_performance()
+        # Pulisci pesi
+        cleaned_weights = {}
+        for symbol, weight in zip(self.symbols, weights):
+            if weight > 0.01:
+                cleaned_weights[symbol] = round(weight, 4)
 
         return {
             'weights': cleaned_weights,
-            'expected_return': performance[0],
-            'volatility': performance[1],
-            'sharpe_ratio': performance[2]
+            'expected_return': portfolio_return,
+            'volatility': portfolio_volatility,
+            'sharpe_ratio': sharpe_ratio
         }
 
     def optimize_efficient_return(self, target_return: float) -> Dict:
@@ -169,7 +214,7 @@ class PortfolioOptimizer:
         Ottimizza per un target di rendimento
 
         Args:
-            target_return: Rendimento target (es. 0.20 per 20%)
+            target_return: Rendimento target
 
         Returns:
             Dizionario con pesi ottimali e performance
@@ -179,20 +224,99 @@ class PortfolioOptimizer:
         if self.S is None:
             self.calculate_covariance_matrix()
 
-        ef = EfficientFrontier(self.mu, self.S)
-        weights = ef.efficient_return(target_return)
-        cleaned_weights = ef.clean_weights()
+        n_assets = len(self.symbols)
 
-        performance = ef.portfolio_performance()
+        # Vincoli
+        constraints = (
+            {'type': 'eq', 'fun': lambda x: np.sum(x) - 1},
+            {'type': 'eq', 'fun': lambda x: np.dot(x, self.mu) - target_return}
+        )
+        bounds = tuple((0, 1) for _ in range(n_assets))
+        initial_weights = np.array([1/n_assets] * n_assets)
+
+        # Ottimizzazione
+        result = minimize(
+            self._portfolio_volatility,
+            initial_weights,
+            method='SLSQP',
+            bounds=bounds,
+            constraints=constraints
+        )
+
+        if not result.success:
+            logger.warning(f"Ottimizzazione non convergente: {result.message}")
+
+        weights = result.x
+        portfolio_return, portfolio_volatility, sharpe_ratio = self._portfolio_stats(weights)
+
+        cleaned_weights = {}
+        for symbol, weight in zip(self.symbols, weights):
+            if weight > 0.01:
+                cleaned_weights[symbol] = round(weight, 4)
 
         return {
             'weights': cleaned_weights,
-            'expected_return': performance[0],
-            'volatility': performance[1],
-            'sharpe_ratio': performance[2]
+            'expected_return': portfolio_return,
+            'volatility': portfolio_volatility,
+            'sharpe_ratio': sharpe_ratio
         }
 
-    def calculate_efficient_frontier(self, points: int = 100) -> Tuple[List[float], List[float]]:
+    def optimize_efficient_risk(self, target_volatility: float) -> Dict:
+        """
+        Ottimizza per un target di volatilità
+
+        Args:
+            target_volatility: Volatilità target
+
+        Returns:
+            Dizionario con pesi ottimali e performance
+        """
+        if self.mu is None:
+            self.calculate_expected_returns()
+        if self.S is None:
+            self.calculate_covariance_matrix()
+
+        n_assets = len(self.symbols)
+
+        def neg_return(weights):
+            return -np.dot(weights, self.mu)
+
+        # Vincoli
+        constraints = (
+            {'type': 'eq', 'fun': lambda x: np.sum(x) - 1},
+            {'type': 'eq', 'fun': lambda x: self._portfolio_volatility(x) - target_volatility}
+        )
+        bounds = tuple((0, 1) for _ in range(n_assets))
+        initial_weights = np.array([1/n_assets] * n_assets)
+
+        # Ottimizzazione
+        result = minimize(
+            neg_return,
+            initial_weights,
+            method='SLSQP',
+            bounds=bounds,
+            constraints=constraints
+        )
+
+        if not result.success:
+            logger.warning(f"Ottimizzazione non convergente: {result.message}")
+
+        weights = result.x
+        portfolio_return, portfolio_volatility, sharpe_ratio = self._portfolio_stats(weights)
+
+        cleaned_weights = {}
+        for symbol, weight in zip(self.symbols, weights):
+            if weight > 0.01:
+                cleaned_weights[symbol] = round(weight, 4)
+
+        return {
+            'weights': cleaned_weights,
+            'expected_return': portfolio_return,
+            'volatility': portfolio_volatility,
+            'sharpe_ratio': sharpe_ratio
+        }
+
+    def calculate_efficient_frontier(self, points: int = 50) -> Tuple[List[float], List[float]]:
         """
         Calcola la frontiera efficiente
 
@@ -212,7 +336,7 @@ class PortfolioOptimizer:
         max_sharpe_result = self.optimize_max_sharpe()
 
         min_return = min_vol_result['expected_return']
-        max_return = max_sharpe_result['expected_return'] * 1.5  # Un po' oltre il max sharpe
+        max_return = max(self.mu) * 0.95  # Un po' sotto il massimo teorico
 
         target_returns = np.linspace(min_return, max_return, points)
 
@@ -221,14 +345,11 @@ class PortfolioOptimizer:
 
         for target_return in target_returns:
             try:
-                ef = EfficientFrontier(self.mu, self.S)
-                ef.efficient_return(target_return)
-                performance = ef.portfolio_performance()
-
-                returns.append(performance[0])
-                volatilities.append(performance[1])
+                result = self.optimize_efficient_return(target_return)
+                returns.append(result['expected_return'])
+                volatilities.append(result['volatility'])
             except Exception as e:
-                # Se non può raggiungere quel rendimento, salta
+                logger.debug(f"Skip return {target_return}: {e}")
                 continue
 
         return volatilities, returns
@@ -253,7 +374,7 @@ class PortfolioOptimizer:
         portfolio_returns = (self.returns * weight_array).sum(axis=1)
 
         # Calcola statistiche
-        annual_return = portfolio_returns.mean() * 252  # 252 trading days
+        annual_return = portfolio_returns.mean() * 252
         annual_volatility = portfolio_returns.std() * np.sqrt(252)
         sharpe_ratio = annual_return / annual_volatility if annual_volatility > 0 else 0
 
@@ -286,14 +407,24 @@ class PortfolioOptimizer:
         Returns:
             Tuple (dizionario {symbol: num_shares}, leftover_cash)
         """
-        latest_prices = get_latest_prices(self.prices)
+        latest_prices = self.prices.iloc[-1]
 
-        da = DiscreteAllocation(
-            weights,
-            latest_prices,
-            total_portfolio_value=total_portfolio_value
-        )
+        allocation = {}
+        leftover = total_portfolio_value
 
-        allocation, leftover = da.greedy_portfolio()
+        # Ordina per peso decrescente
+        sorted_weights = sorted(weights.items(), key=lambda x: x[1], reverse=True)
+
+        for symbol, weight in sorted_weights:
+            if symbol not in latest_prices.index:
+                continue
+
+            price = latest_prices[symbol]
+            target_value = total_portfolio_value * weight
+            num_shares = int(target_value / price)
+
+            if num_shares > 0:
+                allocation[symbol] = num_shares
+                leftover -= num_shares * price
 
         return allocation, leftover

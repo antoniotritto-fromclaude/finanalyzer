@@ -2,16 +2,20 @@
 FinAnalyzer - Frontend Streamlit
 Interfaccia utente per la piattaforma di analisi finanziaria
 """
+# Fix multitasking PRIMA di tutto
+import sys
+import os
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+try:
+    import fix_multitasking
+except:
+    pass
+
 import streamlit as st
 import pandas as pd
 import plotly.graph_objects as go
 import plotly.express as px
 from datetime import datetime
-import sys
-import os
-
-# Aggiungi il path per importare i moduli backend
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from backend.data_collectors.unified_collector import UnifiedDataCollector
 from backend.analyzers.portfolio_optimizer import PortfolioOptimizer
