@@ -31,7 +31,9 @@ def _load_prices(symbols, period="3y"):
 
 
 def render():
-    st.markdown(badge("Portfolio Builder & Markowitz", "💼", "blue"), unsafe_allow_html=True)
+    st.title("💼 Costruttore di Portafoglio")
+    st.markdown("Crea e ottimizza il tuo portafoglio con l'algoritmo di Markowitz")
+    st.markdown("---")
 
     # ── Session state ─────────────────────────────────────────────────────────
     if "pf_symbols" not in st.session_state:
@@ -71,11 +73,11 @@ def render():
     symbols = st.session_state["pf_symbols"]
 
     if not symbols:
-        st.info("Aggiungi almeno 2 simboli per costruire il portafoglio.")
+        st.info("💡 Aggiungi almeno 2 simboli per costruire il portafoglio.")
         return
 
     st.markdown("<br>", unsafe_allow_html=True)
-    st.markdown(badge(f"Portafoglio – {len(symbols)} Titoli", "📊", "teal"), unsafe_allow_html=True)
+    st.subheader(f"📊 Portafoglio – {len(symbols)} Titoli")
 
     # Pesi manuali
     weight_cols = st.columns(min(len(symbols), 5))
@@ -135,7 +137,7 @@ def render():
         # ── Ottimizzazione ────────────────────────────────────────────────────
         if optimize and len(prices_df.columns) >= 2:
             st.markdown("<br>", unsafe_allow_html=True)
-            st.markdown(badge("Ottimizzazione Markowitz", "🎯", "purple"), unsafe_allow_html=True)
+            st.subheader("🎯 Ottimizzazione Markowitz")
 
             opt_type = st.selectbox("Strategia", [
                 "Massimizza Sharpe Ratio",

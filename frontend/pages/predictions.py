@@ -37,13 +37,15 @@ def _metric_html(label, value, sub="", color="#2471c8"):
 
 
 def render():
-    st.markdown(badge("Predizioni Future", "🔮", "purple"), unsafe_allow_html=True)
+    st.title("🔮 Predizioni Future")
+    st.markdown("Simulazioni Monte Carlo per prevedere scenari futuri del portafoglio")
+    st.markdown("---")
 
     symbols = st.session_state.get("pf_symbols", [])
     weights = st.session_state.get("pf_weights", {})
 
     if not symbols:
-        st.warning("⚠️ Aggiungi titoli in **Portfolio Builder** prima.")
+        st.warning("⚠️ Aggiungi titoli nella sezione **Portafoglio** prima.")
         return
 
     st.markdown(f"**Portafoglio:** {' · '.join(symbols)}")
@@ -93,7 +95,7 @@ def render():
 
         # ── Scenari principali ────────────────────────────────────────────────
         st.markdown("<br>", unsafe_allow_html=True)
-        st.markdown(badge(f"Scenari a {months} Mesi", "📊", "teal"), unsafe_allow_html=True)
+        st.subheader(f"📊 Scenari a {months} Mesi")
 
         sc1, sc2, sc3 = st.columns(3)
         with sc1:
@@ -152,7 +154,7 @@ def render():
 
         # ── Statistiche ───────────────────────────────────────────────────────
         st.markdown("<br>", unsafe_allow_html=True)
-        st.markdown(badge("Statistiche Predittive", "📐", "green"), unsafe_allow_html=True)
+        st.subheader("📐 Statistiche Predittive")
 
         stats = scenarios["statistics"]
         sc_cols = st.columns(4)
@@ -170,7 +172,7 @@ def render():
 
         # ── VaR ───────────────────────────────────────────────────────────────
         st.markdown("<br>", unsafe_allow_html=True)
-        st.markdown(badge("Value at Risk (VaR) – 1 Giorno", "⚠️", "orange"), unsafe_allow_html=True)
+        st.subheader("⚠️ Value at Risk (VaR) – 1 Giorno")
         v1, v2, v3 = st.columns(3)
         with v1:
             st.markdown(_metric_html(

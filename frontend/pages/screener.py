@@ -14,7 +14,7 @@ qly_col  = QuantalysCollector()
 
 
 def _etf_screener():
-    st.markdown(badge("ETF Screener – JustETF", "📡", "teal"), unsafe_allow_html=True)
+    st.subheader("📡 ETF Screener – JustETF")
 
     f1, f2, f3, f4 = st.columns(4)
     with f1:
@@ -65,7 +65,7 @@ def _etf_screener():
 
 
 def _fund_screener():
-    st.markdown(badge("Fund Screener – Morningstar + Quantalys", "⭐", "orange"), unsafe_allow_html=True)
+    st.subheader("⭐ Fund Screener – Morningstar + Quantalys")
 
     tab_ms, tab_q = st.tabs(["🌟 Morningstar Top Funds", "📊 Quantalys – Per Categoria"])
 
@@ -131,7 +131,7 @@ def _fund_screener():
 
 
 def _bond_screener():
-    st.markdown(badge("Obbligazioni – Morningstar", "🏛️", "dark"), unsafe_allow_html=True)
+    st.subheader("🏛️ Obbligazioni – Morningstar")
 
     bonds = ms_col.get_bonds_italy()
     df = pd.DataFrame(bonds)
@@ -170,7 +170,7 @@ def _bond_screener():
 
 
 def _commodity_screener():
-    st.markdown(badge("Commodities – Mercati Globali", "🌾", "green"), unsafe_allow_html=True)
+    st.subheader("🌾 Commodities – Mercati Globali")
     import yfinance as yf, time
 
     commodities = ms_col.get_commodities()
@@ -222,10 +222,12 @@ def _commodity_screener():
 
 
 def render():
-    st.markdown(badge("Quantum Screener", "🔭", "blue"), unsafe_allow_html=True)
+    st.title("🔍 Screener Avanzato")
+    st.markdown("Ricerca e analisi di ETF, Fondi, Obbligazioni e Commodities")
+    st.markdown("---")
 
     tab_etf, tab_fund, tab_bond, tab_comm = st.tabs([
-        "📡 ETF Screener", "⭐ Fondi", "🏛️ Obbligazioni", "🌾 Commodities"
+        "📡 ETF", "⭐ Fondi", "🏛️ Obbligazioni", "🌾 Commodities"
     ])
 
     with tab_etf:

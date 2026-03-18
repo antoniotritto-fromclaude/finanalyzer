@@ -38,14 +38,16 @@ def _metric_html(label, value, sub="", color="#2471c8"):
 
 
 def render():
-    st.markdown(badge("Backtest Storico", "⏮️", "dark"), unsafe_allow_html=True)
+    st.title("📈 Backtest Storico")
+    st.markdown("Testa le performance del tuo portafoglio su dati storici")
+    st.markdown("---")
 
     # ── Legge simboli dalla session ───────────────────────────────────────────
     symbols = st.session_state.get("pf_symbols", [])
     weights = st.session_state.get("pf_weights", {})
 
     if not symbols:
-        st.warning("⚠️ Prima aggiungi titoli in **Portfolio Builder**.")
+        st.warning("⚠️ Prima aggiungi titoli nella sezione **Portafoglio**.")
         return
 
     st.markdown(f"**Portafoglio:** {', '.join([chip(s,'blue') for s in symbols])}", unsafe_allow_html=True)
@@ -102,7 +104,7 @@ def render():
         # ── Risultati per periodo ─────────────────────────────────────────────
         for years in sorted(periods):
             st.markdown(f"<br>", unsafe_allow_html=True)
-            st.markdown(badge(f"📅 Backtest – {years} Anno{'i' if years>1 else ''}", color="teal"), unsafe_allow_html=True)
+            st.subheader(f"📅 Backtest – {years} Anno{'i' if years>1 else ''}")
 
             try:
                 result = engine.backtest_portfolio(

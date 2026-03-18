@@ -31,24 +31,29 @@ with st.sidebar:
     st.markdown("""
     <div style="padding:16px 8px 8px 8px;text-align:center;">
         <div style="font-size:1.6rem;font-weight:900;color:#ffffff;letter-spacing:-0.5px;">
-            📊 FinAnalyzer
+            FinAnalyzer Pro
         </div>
         <div style="font-size:0.72rem;color:#7fb3d3;margin-top:2px;letter-spacing:0.5px;">
-            PROFESSIONAL EDITION
+            PIATTAFORMA DI ANALISI FINANZIARIA
         </div>
     </div>
     <hr style="border-color:rgba(255,255,255,0.1);margin:10px 0 16px 0;">
     """, unsafe_allow_html=True)
 
     # Navigation
+    st.markdown("""
+    <div style="font-size:0.68rem;font-weight:700;color:#7fb3d3;text-transform:uppercase;
+                letter-spacing:0.8px;margin-bottom:8px;padding:0 4px;">Menu Principale</div>
+    """, unsafe_allow_html=True)
+
     page = st.radio(
         "Navigazione",
         options=[
-            "📊 Dashboard",
-            "🔭 Screener",
-            "📋 Fundamentals",
-            "💼 Portfolio",
-            "⏮️ Backtest",
+            "🏠 Dashboard",
+            "🔍 Screener",
+            "📊 Analisi Titolo",
+            "💼 Portafoglio",
+            "📈 Backtest",
             "🔮 Predizioni",
         ],
         label_visibility="collapsed",
@@ -118,24 +123,21 @@ st.markdown(f"""
 """, unsafe_allow_html=True)
 
 # ── Routing ───────────────────────────────────────────────────────────────────
-# Rimuove emoji e spazi per matching più robusto
-page_clean = page.replace("📊", "").replace("🔭", "").replace("📋", "").replace("💼", "").replace("⏮️", "").replace("🔮", "").strip()
-
 try:
-    if page_clean == "Dashboard":
+    if "Dashboard" in page:
         dashboard.render()
-    elif page_clean == "Screener":
+    elif "Screener" in page:
         screener.render()
-    elif page_clean == "Fundamentals":
+    elif "Analisi Titolo" in page:
         fundamentals.render()
-    elif page_clean == "Portfolio":
+    elif "Portafoglio" in page:
         portfolio.render()
-    elif page_clean == "Backtest":
+    elif "Backtest" in page:
         backtest.render()
-    elif page_clean == "Predizioni":
+    elif "Predizioni" in page:
         predictions.render()
     else:
-        st.error(f"Pagina non trovata: {page_clean}")
+        st.error(f"❌ Pagina non trovata: {page}")
 except Exception as e:
     st.error(f"❌ Errore nel caricamento della pagina: {str(e)}")
     import traceback

@@ -44,10 +44,11 @@ TOP_MOVERS = [
 
 
 def render():
-    st.markdown(badge("Dashboard Mercati", "📊", "blue"), unsafe_allow_html=True)
+    st.title("📊 Dashboard Mercati")
+    st.markdown("---")
 
     # ── Market Overview ────────────────────────────────────────────────────────
-    st.markdown("### 🌍 Mercati Principali")
+    st.subheader("🌍 Mercati Principali")
     cols = st.columns(len(MARKET_OVERVIEW))
     for col, mkt in zip(cols, MARKET_OVERVIEW):
         with col:
@@ -68,7 +69,7 @@ def render():
     col_left, col_right = st.columns([3, 2], gap="medium")
 
     with col_left:
-        st.markdown(badge("Stagionalità S&P 500", "📅", "teal"), unsafe_allow_html=True)
+        st.subheader("📅 Stagionalità S&P 500")
         fig = seasonality_bar(MONTHLY_SEASONALITY, height=260)
         fig.update_layout(
             paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(255,255,255,0.85)",
@@ -90,7 +91,7 @@ def render():
                 """, unsafe_allow_html=True)
 
     with col_right:
-        st.markdown(badge("Settori – Performance YTD", "🏭", "purple"), unsafe_allow_html=True)
+        st.subheader("🏭 Settori – Performance YTD")
         sectors = list(SECTOR_PERF.keys())
         values  = list(SECTOR_PERF.values())
         colors  = ["#22c55e" if v >= 0 else "#ef4444" for v in values]
@@ -102,7 +103,7 @@ def render():
     st.markdown("<br>", unsafe_allow_html=True)
 
     # ── Top Movers ────────────────────────────────────────────────────────────
-    st.markdown(badge("Top Movers – Borsa Italiana", "🔥", "orange"), unsafe_allow_html=True)
+    st.subheader("🔥 Top Movers – Borsa Italiana")
     st.markdown("""
     <div class="fin-card" style="padding:0;overflow:hidden;">
     <table class="fin-table">
@@ -128,7 +129,7 @@ def render():
     st.markdown("<br>", unsafe_allow_html=True)
 
     # ── Quick Stats ────────────────────────────────────────────────────────────
-    st.markdown(badge("Indicatori Macro", "📐", "dark"), unsafe_allow_html=True)
+    st.subheader("📐 Indicatori Macro")
     mc = st.columns(6)
     macros = [
         ("Inflazione IT","5.9%","▼ -0.3pp","neg"),
