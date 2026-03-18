@@ -1,4 +1,5 @@
-version=2.0.1
-updated=2026-03-18T14:30:00Z
+version=2.0.2
+updated=2026-03-18T15:00:00Z
 branch=claude/financial-analysis-platform-011CUQ8sE8mkTbtRLTAMPSPu
 cache_bust=true
+fix=html-escape
