@@ -23,7 +23,7 @@ from frontend.styles.design import MAIN_CSS
 st.markdown(MAIN_CSS, unsafe_allow_html=True)
 
 # ── Import pagine ─────────────────────────────────────────────────────────────
-from frontend.pages import dashboard, screener, fundamentals, portfolio, backtest, predictions
+from frontend.views import dashboard, screener, fundamentals, portfolio, backtest, predictions
 
 # ── Sidebar Navigation ────────────────────────────────────────────────────────
 with st.sidebar:
