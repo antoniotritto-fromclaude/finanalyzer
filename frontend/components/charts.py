@@ -277,8 +277,12 @@ def seasonality_bar(monthly_returns: Dict[str, float], height: int = 250) -> go.
         textfont=dict(size=10, weight=600),
         hovertemplate="%{x}: %{y:.2f}%<extra></extra>",
     ))
+
+    # Crea una copia del theme senza yaxis per evitare conflitti
+    theme_copy = {k: v for k, v in CHART_THEME.items() if k != "yaxis"}
+
     fig.update_layout(
-        **CHART_THEME,
+        **theme_copy,
         title=dict(text="Stagionalità Mensile", font=dict(size=13, weight=700), x=0),
         yaxis=dict(**CHART_THEME["yaxis"], title="%", ticksuffix="%"),
         height=height,
