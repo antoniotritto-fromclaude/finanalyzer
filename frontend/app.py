@@ -44,12 +44,12 @@ with st.sidebar:
     page = st.radio(
         "Navigazione",
         options=[
-            "📊  Dashboard",
-            "🔭  Quantum Screener",
-            "📋  Fundamentals",
-            "💼  Portfolio Builder",
-            "⏮️  Backtest",
-            "🔮  Predizioni Future",
+            "📊 Dashboard",
+            "🔭 Screener",
+            "📋 Fundamentals",
+            "💼 Portfolio",
+            "⏮️ Backtest",
+            "🔮 Predizioni",
         ],
         label_visibility="collapsed",
     )
@@ -118,15 +118,25 @@ st.markdown(f"""
 """, unsafe_allow_html=True)
 
 # ── Routing ───────────────────────────────────────────────────────────────────
-if "Dashboard" in page:
-    dashboard.render()
-elif "Screener" in page:
-    screener.render()
-elif "Fundamentals" in page:
-    fundamentals.render()
-elif "Portfolio" in page:
-    portfolio.render()
-elif "Backtest" in page:
-    backtest.render()
-elif "Predizioni" in page:
-    predictions.render()
+# Rimuove emoji e spazi per matching più robusto
+page_clean = page.replace("📊", "").replace("🔭", "").replace("📋", "").replace("💼", "").replace("⏮️", "").replace("🔮", "").strip()
+
+try:
+    if page_clean == "Dashboard":
+        dashboard.render()
+    elif page_clean == "Screener":
+        screener.render()
+    elif page_clean == "Fundamentals":
+        fundamentals.render()
+    elif page_clean == "Portfolio":
+        portfolio.render()
+    elif page_clean == "Backtest":
+        backtest.render()
+    elif page_clean == "Predizioni":
+        predictions.render()
+    else:
+        st.error(f"Pagina non trovata: {page_clean}")
+except Exception as e:
+    st.error(f"❌ Errore nel caricamento della pagina: {str(e)}")
+    import traceback
+    st.code(traceback.format_exc())
