@@ -105,8 +105,18 @@ def render():
     # ── Top Movers ────────────────────────────────────────────────────────────
     st.subheader("🔥 Top Movers – Borsa Italiana")
 
-    # Build HTML table with proper rendering
-    table_rows = "".join([f"""
+    # Build complete HTML table as single string
+    html_table = """
+    <div class="fin-card" style="padding:0;overflow:hidden;">
+    <table class="fin-table">
+        <thead><tr>
+            <th>#</th><th>Titolo</th><th>Prezzo</th><th>Var%</th><th>Volume</th><th>Market Cap</th>
+        </tr></thead>
+        <tbody>
+    """
+
+    for i, m in enumerate(TOP_MOVERS):
+        html_table += f"""
         <tr>
             <td class="rank-num">{i+1}</td>
             <td><b>{m['name']}</b><br><span style="color:#9ca3af;font-size:0.7rem;">{m['symbol']}</span></td>
@@ -115,20 +125,15 @@ def render():
             <td>{m['vol']}</td>
             <td>{m['cap']}</td>
         </tr>
-    """ for i, m in enumerate(TOP_MOVERS)])
+        """
 
-    st.markdown(f"""
-    <div class="fin-card" style="padding:0;overflow:hidden;">
-    <table class="fin-table">
-        <thead><tr>
-            <th>#</th><th>Titolo</th><th>Prezzo</th><th>Var%</th><th>Volume</th><th>Market Cap</th>
-        </tr></thead>
-        <tbody>
-    {table_rows}
+    html_table += """
         </tbody>
     </table>
     </div>
-    """, unsafe_allow_html=True)
+    """
+
+    st.markdown(html_table, unsafe_allow_html=True)
 
     st.markdown("<br>", unsafe_allow_html=True)
 

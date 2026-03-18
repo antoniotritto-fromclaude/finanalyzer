@@ -149,8 +149,19 @@ def _bond_screener():
 
     df_sorted = df.sort_values("rendimento", ascending=False)
 
-    # Build HTML table rows with proper rendering
-    table_rows = "".join([f"""
+    # Build complete HTML table as single string
+    html_table = """
+    <div class="fin-card" style="padding:0;overflow:hidden;">
+    <table class="fin-table">
+        <thead><tr>
+            <th>Nome</th><th>ISIN</th><th>Tipo</th><th>Scadenza</th>
+            <th>Cedola</th><th>Rendimento</th><th>Rating</th><th>Paese</th>
+        </tr></thead>
+        <tbody>
+    """
+
+    for _, r in df_sorted.iterrows():
+        html_table += f"""
         <tr>
             <td style="font-weight:600;">{r['name']}</td>
             <td><code style="font-size:0.72rem;">{r['isin']}</code></td>
@@ -161,21 +172,15 @@ def _bond_screener():
             <td>{chip(r['rating'], 'green' if r['rating'].startswith('AA') else ('orange' if r['rating'].startswith('BB') else 'gray'))}</td>
             <td>{r['paese']}</td>
         </tr>
-    """ for _, r in df_sorted.iterrows()])
+        """
 
-    st.markdown(f"""
-    <div class="fin-card" style="padding:0;overflow:hidden;">
-    <table class="fin-table">
-        <thead><tr>
-            <th>Nome</th><th>ISIN</th><th>Tipo</th><th>Scadenza</th>
-            <th>Cedola</th><th>Rendimento</th><th>Rating</th><th>Paese</th>
-        </tr></thead>
-        <tbody>
-    {table_rows}
+    html_table += """
         </tbody>
     </table>
     </div>
-    """, unsafe_allow_html=True)
+    """
+
+    st.markdown(html_table, unsafe_allow_html=True)
 
 
 def _commodity_screener():
