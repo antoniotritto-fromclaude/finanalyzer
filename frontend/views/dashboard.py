@@ -105,35 +105,29 @@ def render():
     # ── Top Movers ────────────────────────────────────────────────────────────
     st.subheader("🔥 Top Movers – Borsa Italiana")
 
-    # Build complete HTML table as single string
-    html_table = """
-    <div class="fin-card" style="padding:0;overflow:hidden;">
-    <table class="fin-table">
-        <thead><tr>
-            <th>#</th><th>Titolo</th><th>Prezzo</th><th>Var%</th><th>Volume</th><th>Market Cap</th>
-        </tr></thead>
-        <tbody>
-    """
+    # Crea DataFrame dai dati
+    df_movers = pd.DataFrame(TOP_MOVERS)
+    df_movers.index = df_movers.index + 1  # Start from 1
 
-    for i, m in enumerate(TOP_MOVERS):
-        html_table += f"""
-        <tr>
-            <td class="rank-num">{i+1}</td>
-            <td><b>{m['name']}</b><br><span style="color:#9ca3af;font-size:0.7rem;">{m['symbol']}</span></td>
-            <td style="font-weight:700;">{m['price']}</td>
-            <td>{color_pct(m['change'])}</td>
-            <td>{m['vol']}</td>
-            <td>{m['cap']}</td>
-        </tr>
-        """
-
-    html_table += """
-        </tbody>
-    </table>
-    </div>
-    """
-
-    st.markdown(html_table, unsafe_allow_html=True)
+    # Display con st.dataframe nativo (NO HTML ESCAPE!)
+    st.dataframe(
+        df_movers,
+        use_container_width=True,
+        hide_index=False,
+        column_config={
+            "name": st.column_config.TextColumn("Titolo", width="medium"),
+            "symbol": st.column_config.TextColumn("Ticker", width="small"),
+            "price": st.column_config.TextColumn("Prezzo", width="small"),
+            "change": st.column_config.NumberColumn(
+                "Var%",
+                format="%.2f%%",
+                width="small",
+            ),
+            "vol": st.column_config.TextColumn("Volume", width="small"),
+            "cap": st.column_config.TextColumn("Market Cap", width="medium"),
+        },
+        height=280,
+    )
 
     st.markdown("<br>", unsafe_allow_html=True)
 

@@ -87,24 +87,66 @@ section[data-testid="stSidebar"] h3 {
     color: #ffffff !important;
 }
 
-/* Sidebar nav items */
-.sidebar-nav-item {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    padding: 10px 16px;
-    margin: 4px 0;
-    border-radius: 12px;
-    cursor: pointer;
-    color: #a8c8e8;
-    font-size: 14px;
-    font-weight: 500;
-    transition: all 0.2s;
-    text-decoration: none;
+/* ===== MODERN MENU NAVIGATION ===== */
+/* Hide default radio button circles */
+section[data-testid="stSidebar"] .stRadio > div[role="radiogroup"] > label > div:first-child {
+    display: none !important;
 }
-.sidebar-nav-item:hover, .sidebar-nav-item.active {
-    background: rgba(255,255,255,0.15);
-    color: #ffffff;
+
+/* Style menu items */
+section[data-testid="stSidebar"] .stRadio > div[role="radiogroup"] > label {
+    display: flex !important;
+    align-items: center !important;
+    gap: 12px !important;
+    padding: 12px 16px !important;
+    margin: 4px 0 !important;
+    border-radius: 12px !important;
+    cursor: pointer !important;
+    color: #a8c8e8 !important;
+    font-size: 0.95rem !important;
+    font-weight: 500 !important;
+    transition: all 0.25s ease !important;
+    background: transparent !important;
+    border-left: 3px solid transparent !important;
+    position: relative !important;
+}
+
+/* Hover effect */
+section[data-testid="stSidebar"] .stRadio > div[role="radiogroup"] > label:hover {
+    background: rgba(255,255,255,0.08) !important;
+    color: #e0edf8 !important;
+    transform: translateX(2px) !important;
+}
+
+/* Selected item with arrow */
+section[data-testid="stSidebar"] .stRadio > div[role="radiogroup"] > label[data-checked="true"] {
+    background: linear-gradient(90deg, rgba(255,255,255,0.18), rgba(255,255,255,0.10)) !important;
+    color: #ffffff !important;
+    font-weight: 600 !important;
+    border-left: 3px solid #22c55e !important;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.15) !important;
+}
+
+/* Arrow indicator on selected item */
+section[data-testid="stSidebar"] .stRadio > div[role="radiogroup"] > label[data-checked="true"]::before {
+    content: "▶" !important;
+    position: absolute !important;
+    left: 8px !important;
+    font-size: 0.7rem !important;
+    color: #22c55e !important;
+    animation: pulse 2s ease-in-out infinite !important;
+}
+
+/* Pulse animation for arrow */
+@keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+}
+
+/* Text content inside label */
+section[data-testid="stSidebar"] .stRadio > div[role="radiogroup"] > label > div {
+    color: inherit !important;
+    padding-left: 8px !important;
 }
 
 /* ===== TOP HEADER ===== */

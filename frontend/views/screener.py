@@ -149,38 +149,31 @@ def _bond_screener():
 
     df_sorted = df.sort_values("rendimento", ascending=False)
 
-    # Build complete HTML table as single string
-    html_table = """
-    <div class="fin-card" style="padding:0;overflow:hidden;">
-    <table class="fin-table">
-        <thead><tr>
-            <th>Nome</th><th>ISIN</th><th>Tipo</th><th>Scadenza</th>
-            <th>Cedola</th><th>Rendimento</th><th>Rating</th><th>Paese</th>
-        </tr></thead>
-        <tbody>
-    """
-
-    for _, r in df_sorted.iterrows():
-        html_table += f"""
-        <tr>
-            <td style="font-weight:600;">{r['name']}</td>
-            <td><code style="font-size:0.72rem;">{r['isin']}</code></td>
-            <td>{chip(r['type'], 'blue' if r['type']=='BTP' else ('green' if r['type']=='Bund' else 'gray'))}</td>
-            <td>{r['scadenza']}</td>
-            <td>{r['cedola']:.2f}%</td>
-            <td><b>{r['rendimento']:.2f}%</b></td>
-            <td>{chip(r['rating'], 'green' if r['rating'].startswith('AA') else ('orange' if r['rating'].startswith('BB') else 'gray'))}</td>
-            <td>{r['paese']}</td>
-        </tr>
-        """
-
-    html_table += """
-        </tbody>
-    </table>
-    </div>
-    """
-
-    st.markdown(html_table, unsafe_allow_html=True)
+    # Display con st.dataframe nativo (NO HTML ESCAPE!)
+    st.dataframe(
+        df_sorted,
+        use_container_width=True,
+        hide_index=True,
+        column_config={
+            "name": st.column_config.TextColumn("Nome", width="large"),
+            "isin": st.column_config.TextColumn("ISIN", width="medium"),
+            "type": st.column_config.TextColumn("Tipo", width="small"),
+            "scadenza": st.column_config.TextColumn("Scadenza", width="medium"),
+            "cedola": st.column_config.NumberColumn(
+                "Cedola",
+                format="%.2f%%",
+                width="small",
+            ),
+            "rendimento": st.column_config.NumberColumn(
+                "Rendimento",
+                format="%.2f%%",
+                width="small",
+            ),
+            "rating": st.column_config.TextColumn("Rating", width="small"),
+            "paese": st.column_config.TextColumn("Paese", width="small"),
+        },
+        height=400,
+    )
 
 
 def _commodity_screener():
