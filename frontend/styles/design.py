@@ -41,10 +41,25 @@ html, body, [class*="css"] {
     max-width: 1400px;
 }
 
-/* Hide default Streamlit header & footer */
-header[data-testid="stHeader"] { display: none !important; }
+/* Keep Streamlit header visible for sidebar toggle */
+header[data-testid="stHeader"] {
+    background: transparent !important;
+    height: 3rem !important;
+}
 footer { display: none !important; }
 #MainMenu { display: none !important; }
+
+/* Style the sidebar toggle button */
+button[kind="header"] {
+    background: white !important;
+    border-radius: 8px !important;
+    padding: 8px 12px !important;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1) !important;
+}
+button[kind="header"]:hover {
+    background: #f0f6fc !important;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15) !important;
+}
 
 /* ===== BACKGROUND ===== */
 .stApp {
