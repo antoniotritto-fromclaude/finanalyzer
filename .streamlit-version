@@ -1,6 +1,6 @@
-version=3.0.0
-updated=2026-03-18T16:00:00Z
+version=4.0.0
+updated=2026-03-18T18:00:00Z
 branch=claude/financial-analysis-platform-011CUQ8sE8mkTbtRLTAMPSPu
 cache_bust=true
-refactor=complete-html-native-dataframe
-menu=modern-with-arrow
+major_update=all-pages-fixed
+features=realtime-data+portfolio-working+custom-links
