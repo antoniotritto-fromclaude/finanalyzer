@@ -168,32 +168,54 @@ def render():
                     # Performance 6M
                     perf_6m = ((data.iloc[-1] / data.iloc[0]) - 1) * 100
 
-                    # Mini chart
+                    # Valori min/max per scaling
+                    min_val = data.min()
+                    max_val = data.max()
+                    current_val = data.iloc[-1]
+
+                    # Mini chart MIGLIORATO
                     fig = go.Figure()
                     fig.add_trace(go.Scatter(
                         x=data.index,
                         y=data.values,
                         mode="lines",
-                        line=dict(color=color, width=2),
+                        line=dict(color=color, width=3),
                         fill="tozeroy",
-                        fillcolor=f"rgba{tuple(list(bytes.fromhex(color[1:])) + [0.2])}",
+                        fillcolor=f"rgba{tuple(list(bytes.fromhex(color[1:])) + [0.15])}",
                         name=name,
-                        hovertemplate="%{y:.2f}<extra></extra>"
+                        hovertemplate="<b>%{x|%d %b}</b><br>Prezzo: %{y:,.2f}<extra></extra>"
                     ))
+
                     fig.update_layout(
-                        height=180,
-                        margin=dict(l=0, r=0, t=35, b=20),
+                        height=200,
+                        margin=dict(l=10, r=10, t=60, b=30),
                         paper_bgcolor="rgba(0,0,0,0)",
-                        plot_bgcolor="rgba(255,255,255,0.85)",
+                        plot_bgcolor="rgba(255,255,255,0.9)",
                         title=dict(
-                            text=f"<b>{name}</b><br><span style='font-size:1.2rem;color:{color};'>{perf_6m:+.1f}%</span>",
+                            text=f"<b style='font-size:14px;'>{name}</b><br>"
+                                 f"<span style='font-size:16px;font-weight:700;color:{color};'>{current_val:,.2f}</span><br>"
+                                 f"<span style='font-size:18px;font-weight:800;color:{color};'>{perf_6m:+.1f}%</span>",
                             font=dict(size=12),
                             x=0.5,
-                            xanchor="center"
+                            xanchor="center",
+                            y=0.95,
+                            yanchor="top"
                         ),
                         showlegend=False,
-                        xaxis=dict(showgrid=False, showticklabels=False),
-                        yaxis=dict(showgrid=True, gridcolor="#e5e7eb", showticklabels=False),
+                        xaxis=dict(
+                            showgrid=False,
+                            showticklabels=True,
+                            tickfont=dict(size=9, color="#6b7280"),
+                            nticks=4
+                        ),
+                        yaxis=dict(
+                            showgrid=True,
+                            gridcolor="#e5e7eb",
+                            gridwidth=0.5,
+                            showticklabels=True,
+                            tickfont=dict(size=10, color="#374151"),
+                            tickformat=",.0f"
+                        ),
                     )
                     st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": False})
 

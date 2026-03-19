@@ -32,8 +32,21 @@ def _load_prices(symbols, period="3y"):
 
 def render():
     st.title("💼 Costruttore di Portafoglio")
-    st.markdown("Crea e ottimizza il tuo portafoglio con l'algoritmo di Markowitz")
-    st.markdown("---")
+
+    st.markdown("""
+    <div class="fin-card" style="background:#f0fdf4;border-left:4px solid #22c55e;padding:16px;">
+        <b>✅ Portafoglio Multi-Asset:</b> Puoi aggiungere qualsiasi asset:
+        <ul style="margin:4px 0 0 0;padding-left:20px;">
+            <li><b>📈 Azioni</b>: AAPL, ENI.MI, MSFT, etc.</li>
+            <li><b>📡 ETF</b>: SWDA.MI, SPY, VWCE.DE, etc.</li>
+            <li><b>🌾 Commodities</b>: GC=F (Gold), CL=F (Petrolio), etc.</li>
+            <li><b>💰 Crypto</b>: BTC-USD, ETH-USD, etc.</li>
+        </ul>
+        💡 <b>Tip:</b> Usa lo <b>Screener</b> per aggiungere rapidamente titoli da liste predef inite!
+    </div>
+    """, unsafe_allow_html=True)
+
+    st.markdown("<br>", unsafe_allow_html=True)
 
     # ── Session state ─────────────────────────────────────────────────────────
     if "pf_symbols" not in st.session_state:

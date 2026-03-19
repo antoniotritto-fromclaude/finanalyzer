@@ -1,265 +1,204 @@
 """
-Quantum Screener - Ricerca avanzata strumenti finanziari
+Screener SEMPLIFICATO - Seleziona titoli da aggiungere al portafoglio
 """
 import streamlit as st
 import pandas as pd
-from frontend.styles.design import badge, color_pct, chip, stars
-from backend.data_collectors.justetf import JustETFCollector
-from backend.data_collectors.morningstar import MorningstarCollector
-from backend.data_collectors.quantalys import QuantalysCollector
-
-etf_col  = JustETFCollector()
-ms_col   = MorningstarCollector()
-qly_col  = QuantalysCollector()
+import yfinance as yf
+import time
 
 
-def _etf_screener():
-    st.subheader("📡 ETF Screener – JustETF")
+# Liste predefinite per selezione rapida
+AZIONI_POPOLARI = {
+    "🇮🇹 Italia": ["ENI.MI", "ENEL.MI", "ISP.MI", "UCG.MI", "RACE.MI", "STLAM.MI", "TIT.MI", "AZM.MI", "G.MI", "TENR.MI"],
+    "🇺🇸 USA Tech": ["AAPL", "MSFT", "GOOGL", "AMZN", "NVDA", "META", "TSLA", "NFLX", "AMD", "INTC"],
+    "🇺🇸 USA Finance": ["JPM", "BAC", "WFC", "GS", "MS", "C", "BLK", "SCHW"],
+    "🇺🇸 USA Consumer": ["WMT", "HD", "MCD", "NKE", "SBUX", "TGT", "COST"],
+    "🇪🇺 Europa": ["AIR.PA", "SAN.MC", "OR.PA", "BNP.PA", "SU.PA", "SAP.DE", "SIE.DE"],
+}
 
-    f1, f2, f3, f4 = st.columns(4)
-    with f1:
-        category = st.selectbox("Categoria", [
-            "Tutti","Azionario Globale","Azionario USA","Azionario Europa","Azionario Italia",
-            "Azionario Emergenti","Obbligazionario","Commodities - Oro","Azionario Settoriale"
-        ])
-    with f2:
-        dist = st.selectbox("Distribuzione", ["Tutti","Accumulazione","Distribuzione"])
-    with f3:
-        repl = st.selectbox("Replica", ["Tutti","Fisica","Sintetica"])
-    with f4:
-        max_ter = st.slider("TER max (%)", 0.0, 2.0, 1.0, 0.05)
+ETF_POPOLARI = {
+    "🌍 Globali": ["SWDA.MI", "VWCE.DE", "CSPX.MI", "VUSA.L", "IWDA.AS"],
+    "🇺🇸 USA": ["SPY", "QQQ", "VOO", "VTI", "IVV"],
+    "🇪🇺 Europa": ["EXS1.DE", "IQQE.DE", "MEUD.DE"],
+    "🏛️ Obbligazionari": ["VGEA.L", "IEAG.L", "AGGH.MI"],
+    "📊 Tematici": ["ECAR.MI", "IUIT.MI", "HEAL.L", "RBOT.L"],
+}
 
-    etfs = etf_col.get_popular_etfs()
-    df   = pd.DataFrame(etfs)
+COMMODITIES = {
+    "⚡ Energia": ["CL=F", "NG=F", "BZ=F"],
+    "🥇 Metalli Preziosi": ["GC=F", "SI=F", "PL=F", "PA=F"],
+    "🌾 Agricoltura": ["ZC=F", "ZW=F", "KC=F", "CC=F", "SB=F"],
+    "🏗️ Metalli Industriali": ["HG=F", "ALI=F"],
+}
 
-    if category != "Tutti":
-        df = df[df["category"] == category]
-    if dist != "Tutti":
-        df = df[df["distribution"] == dist]
-    if repl != "Tutti":
-        df = df[df["replication"] == repl]
-    df = df[df["ter"] <= max_ter]
-    df = df.sort_values("ter")
-
-    st.markdown(f"**{len(df)} ETF trovati**", unsafe_allow_html=True)
-    st.markdown("""
-    <div class="fin-card" style="padding:0;overflow:hidden;">
-    <table class="fin-table">
-        <thead><tr>
-            <th>#</th><th>Nome ETF</th><th>ISIN</th><th>Ticker</th>
-            <th>Categoria</th><th>TER</th><th>Replica</th><th>Distribuzione</th><th>Paese</th>
-        </tr></thead><tbody>
-    """ + "".join([f"""
-        <tr>
-            <td class="rank-num">{row['rank']}</td>
-            <td style="font-weight:600;min-width:200px;">{row['name']}</td>
-            <td><code style="font-size:0.72rem;background:#f3f4f6;padding:2px 6px;border-radius:4px;">{row['isin']}</code></td>
-            <td>{chip(row['ticker'], 'blue')}</td>
-            <td style="font-size:0.78rem;">{row.get('category','')}</td>
-            <td>{chip(f"{row['ter']:.2f}%", 'green' if row['ter']<=0.20 else ('orange' if row['ter']<=0.50 else 'red'))}</td>
-            <td>{chip(row['replication'], 'blue' if row['replication']=='Fisica' else 'gray')}</td>
-            <td>{chip(row['distribution'], 'purple' if row['distribution']=='Accumulazione' else 'teal')}</td>
-            <td>{row['domicile']}</td>
-        </tr>
-    """ for _, row in df.iterrows()]) + "</tbody></table></div>", unsafe_allow_html=True)
+CRYPTO = {
+    "💰 Principali": ["BTC-USD", "ETH-USD", "BNB-USD", "XRP-USD", "ADA-USD", "SOL-USD", "DOGE-USD"],
+}
 
 
-def _fund_screener():
-    st.subheader("⭐ Fund Screener – Morningstar + Quantalys")
+def _add_to_portfolio(symbol):
+    """Aggiunge un simbolo al portafoglio"""
+    if "pf_symbols" not in st.session_state:
+        st.session_state["pf_symbols"] = []
 
-    tab_ms, tab_q = st.tabs(["🌟 Morningstar Top Funds", "📊 Quantalys – Per Categoria"])
+    if symbol in st.session_state["pf_symbols"]:
+        return False, f"⚠️ {symbol} già nel portafoglio"
 
-    with tab_ms:
-        funds = ms_col.get_top_funds_italy()
-        df = pd.DataFrame(funds)
+    # Valida con Yahoo Finance
+    try:
+        ticker = yf.Ticker(symbol)
+        hist = ticker.history(period="5d")
+        if hist.empty:
+            return False, f"❌ {symbol} non trovato"
 
-        f1, f2 = st.columns(2)
-        with f1:
-            type_filter = st.selectbox("Tipo", ["Tutti"] + sorted(df["type"].unique().tolist()))
-        with f2:
-            cat_filter = st.selectbox("Categoria", ["Tutti"] + sorted(df["category"].unique().tolist()))
-
-        if type_filter != "Tutti":
-            df = df[df["type"] == type_filter]
-        if cat_filter != "Tutti":
-            df = df[df["category"] == cat_filter]
-
-        st.markdown("""
-        <div class="fin-card" style="padding:0;overflow:hidden;">
-        <table class="fin-table">
-            <thead><tr>
-                <th>Nome Fondo</th><th>ISIN</th><th>Categoria</th><th>Rating</th>
-                <th>TER</th><th>YTD</th><th>1 Anno</th><th>3 Anni</th>
-            </tr></thead><tbody>
-        """ + "".join([f"""
-            <tr>
-                <td style="font-weight:600;min-width:220px;">{r['name']}</td>
-                <td><code style="font-size:0.72rem;">{r['isin']}</code></td>
-                <td style="font-size:0.78rem;">{r['category']}</td>
-                <td>{stars(r['rating'])}</td>
-                <td>{chip(f"{r['ter']:.2f}%", 'green' if r['ter']<1 else 'orange')}</td>
-                <td>{color_pct(r['ytd'])}</td>
-                <td>{color_pct(r['1y'])}</td>
-                <td>{color_pct(r['3y'])}</td>
-            </tr>
-        """ for _, r in df.iterrows()]) + "</tbody></table></div>", unsafe_allow_html=True)
-
-    with tab_q:
-        categories_data = qly_col.get_best_funds_by_category()
-        sel_cat = st.selectbox("Seleziona Categoria", list(categories_data.keys()))
-        funds_q = categories_data[sel_cat]
-
-        st.markdown("""
-        <div class="fin-card" style="padding:0;overflow:hidden;">
-        <table class="fin-table">
-            <thead><tr>
-                <th>Nome Fondo</th><th>ISIN</th><th>Rating</th>
-                <th>TER</th><th>1 Anno</th><th>3 Anni</th><th>5 Anni</th><th>Rischio</th>
-            </tr></thead><tbody>
-        """ + "".join([f"""
-            <tr>
-                <td style="font-weight:600;min-width:220px;">{f['name']}</td>
-                <td><code style="font-size:0.72rem;">{f['isin']}</code></td>
-                <td>{stars(f['rating'])}</td>
-                <td>{chip(f"{f['ter']:.2f}%", 'green' if f['ter']<1 else 'orange')}</td>
-                <td>{color_pct(f['1y'])}</td>
-                <td>{color_pct(f['3y'])}</td>
-                <td>{color_pct(f['5y'])}</td>
-                <td>{'⚡' * f['risk']}</td>
-            </tr>
-        """ for f in funds_q]) + "</tbody></table></div>", unsafe_allow_html=True)
-
-
-def _bond_screener():
-    st.subheader("🏛️ Obbligazioni – Morningstar")
-
-    bonds = ms_col.get_bonds_italy()
-    df = pd.DataFrame(bonds)
-
-    f1, f2 = st.columns(2)
-    with f1:
-        btype = st.selectbox("Tipo", ["Tutti"] + sorted(df["type"].unique().tolist()))
-    with f2:
-        country = st.selectbox("Paese", ["Tutti"] + sorted(df["paese"].unique().tolist()))
-
-    if btype != "Tutti":
-        df = df[df["type"] == btype]
-    if country != "Tutti":
-        df = df[df["paese"] == country]
-
-    df_sorted = df.sort_values("rendimento", ascending=False)
-
-    # Display con st.dataframe nativo (NO HTML ESCAPE!)
-    st.dataframe(
-        df_sorted,
-        use_container_width=True,
-        hide_index=True,
-        column_config={
-            "name": st.column_config.TextColumn("Nome", width="large"),
-            "isin": st.column_config.TextColumn("ISIN", width="medium"),
-            "type": st.column_config.TextColumn("Tipo", width="small"),
-            "scadenza": st.column_config.TextColumn("Scadenza", width="medium"),
-            "cedola": st.column_config.NumberColumn(
-                "Cedola",
-                format="%.2f%%",
-                width="small",
-            ),
-            "rendimento": st.column_config.NumberColumn(
-                "Rendimento",
-                format="%.2f%%",
-                width="small",
-            ),
-            "rating": st.column_config.TextColumn("Rating", width="small"),
-            "paese": st.column_config.TextColumn("Paese", width="small"),
-        },
-        height=400,
-    )
-
-
-def _commodity_screener():
-    st.subheader("🌾 Commodities – Mercati Globali")
-    import yfinance as yf, time
-
-    commodities = ms_col.get_commodities()
-
-    prices_live = {}
-    with st.spinner("Caricamento prezzi live..."):
-        for c in commodities:
-            try:
-                t = yf.Ticker(c["symbol"])
-                hist = t.history(period="5d")
-                if not hist.empty:
-                    prices_live[c["symbol"]] = {
-                        "last":   hist["Close"].iloc[-1],
-                        "prev":   hist["Close"].iloc[-2] if len(hist) > 1 else hist["Close"].iloc[-1],
-                        "volume": hist["Volume"].iloc[-1],
-                    }
-                time.sleep(0.3)
-            except:
-                pass
-
-    rows_html = ""
-    for c in commodities:
-        sym  = c["symbol"]
-        info = prices_live.get(sym, {})
-        last = info.get("last", 0)
-        prev = info.get("prev", last)
-        chg  = ((last - prev) / prev * 100) if prev else 0
-        price_str  = f"{last:.2f}" if last else "N/D"
-        change_str = color_pct(chg) if last else "–"
-
-        rows_html += f"""
-        <tr>
-            <td style="font-weight:600;">{c['name']}</td>
-            <td>{chip(sym,'gray')}</td>
-            <td><b>{price_str}</b></td>
-            <td>{c['unit']}</td>
-            <td>{change_str}</td>
-            <td>{chip(c['category'], 'orange' if 'Energia' in c['category'] else ('green' if 'Agricoltura' in c['category'] else 'blue'))}</td>
-        </tr>"""
-
-    st.markdown(f"""
-    <div class="fin-card" style="padding:0;overflow:hidden;">
-    <table class="fin-table">
-        <thead><tr><th>Commodity</th><th>Simbolo</th><th>Prezzo</th><th>Unità</th><th>Var%</th><th>Categoria</th></tr></thead>
-        <tbody>{rows_html}</tbody>
-    </table>
-    </div>
-    """, unsafe_allow_html=True)
+        st.session_state["pf_symbols"].append(symbol)
+        return True, f"✅ {symbol} aggiunto!"
+    except Exception as e:
+        return False, f"❌ Errore: {str(e)[:50]}"
 
 
 def render():
-    st.title("🔍 Screener Avanzato")
+    st.title("🔍 Screener - Selezione Titoli")
 
-    # Header con istruzioni chiare
     st.markdown("""
-    <div class="fin-card" style="background:linear-gradient(135deg, #dbeafe, #f0f9ff);border-left:4px solid #2471c8;padding:16px 20px;">
-        <div style="font-size:1.05rem;font-weight:700;color:#1e40af;margin-bottom:8px;">
-            📊 Come funziona lo Screener
-        </div>
-        <ul style="margin:8px 0 0 0;padding-left:20px;line-height:1.8;">
-            <li><b>📡 ETF</b>: Filtra ETF per categoria, TER, tipo di replica e distribuzione</li>
-            <li><b>⭐ Fondi</b>: Trova i migliori fondi comuni da Morningstar e Quantalys</li>
-            <li><b>🏛️ Obbligazioni</b>: Cerca BTP, Corporate Bond e altri titoli di debito</li>
-            <li><b>🌾 Commodities</b>: Monitora prezzi live di materie prime e metalli</li>
-        </ul>
-        <div style="margin-top:12px;padding:10px;background:#fef3c7;border-radius:8px;font-size:0.88rem;">
-            💡 <b>Tip</b>: Per analizzare un titolo nel dettaglio, vai su <b>Analisi Titolo</b> e inserisci il simbolo Yahoo Finance
-        </div>
+    <div class="fin-card" style="background:#f0f9ff;border-left:4px solid #2471c8;padding:16px;">
+        <b>💡 Come funziona:</b>
+        <ol style="margin:8px 0 0 0;padding-left:20px;">
+            <li>Cerca un simbolo manualmente OPPURE</li>
+            <li>Seleziona da liste predefinite (Azioni, ETF, Commodities)</li>
+            <li>Clicca "➕ Aggiungi" per inserire nel portafoglio</li>
+            <li>Vai su <b>Portafoglio</b> per gestire e ottimizzare</li>
+        </ol>
     </div>
     """, unsafe_allow_html=True)
 
     st.markdown("<br>", unsafe_allow_html=True)
 
-    tab_etf, tab_fund, tab_bond, tab_comm = st.tabs([
-        "📡 ETF", "⭐ Fondi", "🏛️ Obbligazioni", "🌾 Commodities"
+    # ═══════════════════════════════════════════════════════════════
+    # RICERCA MANUALE
+    # ═══════════════════════════════════════════════════════════════
+    st.subheader("🔎 Ricerca Manuale")
+
+    col1, col2 = st.columns([4, 1])
+    with col1:
+        manual_symbol = st.text_input(
+            "Inserisci simbolo Yahoo Finance",
+            placeholder="Es: AAPL, ENI.MI, BTC-USD, GC=F",
+            help="Cerca qualsiasi titolo, ETF, commodity o crypto",
+            key="manual_search"
+        )
+    with col2:
+        st.markdown("<br>", unsafe_allow_html=True)
+        if st.button("➕ Aggiungi", key="add_manual", type="primary", use_container_width=True):
+            if manual_symbol:
+                success, msg = _add_to_portfolio(manual_symbol.strip().upper())
+                if success:
+                    st.success(msg)
+                    time.sleep(0.5)
+                    st.rerun()
+                else:
+                    st.error(msg)
+
+    st.markdown("<br>", unsafe_allow_html=True)
+
+    # ═══════════════════════════════════════════════════════════════
+    # SELEZIONE RAPIDA
+    # ═══════════════════════════════════════════════════════════════
+    st.subheader("⚡ Selezione Rapida")
+
+    tab_stocks, tab_etf, tab_comm, tab_crypto = st.tabs([
+        "📈 Azioni", "📡 ETF", "🌾 Commodities", "💰 Crypto"
     ])
 
+    # ──────────────────────────────────────────────────────────────
+    # TAB AZIONI
+    # ──────────────────────────────────────────────────────────────
+    with tab_stocks:
+        st.markdown("Seleziona azioni da aggiungere al portafoglio:")
+
+        for region, symbols in AZIONI_POPOLARI.items():
+            with st.expander(f"{region} ({len(symbols)} titoli)"):
+                cols = st.columns(5)
+                for i, sym in enumerate(symbols):
+                    with cols[i % 5]:
+                        if st.button(sym, key=f"stock_{sym}", use_container_width=True):
+                            success, msg = _add_to_portfolio(sym)
+                            if success:
+                                st.success(msg)
+                                time.sleep(0.5)
+                                st.rerun()
+                            else:
+                                st.warning(msg)
+
+    # ──────────────────────────────────────────────────────────────
+    # TAB ETF
+    # ──────────────────────────────────────────────────────────────
     with tab_etf:
-        _etf_screener()
-    with tab_fund:
-        _fund_screener()
-    with tab_bond:
-        _bond_screener()
+        st.markdown("Seleziona ETF da aggiungere al portafoglio:")
+
+        for category, symbols in ETF_POPOLARI.items():
+            with st.expander(f"{category} ({len(symbols)} ETF)"):
+                cols = st.columns(5)
+                for i, sym in enumerate(symbols):
+                    with cols[i % 5]:
+                        if st.button(sym, key=f"etf_{sym}", use_container_width=True):
+                            success, msg = _add_to_portfolio(sym)
+                            if success:
+                                st.success(msg)
+                                time.sleep(0.5)
+                                st.rerun()
+                            else:
+                                st.warning(msg)
+
+    # ──────────────────────────────────────────────────────────────
+    # TAB COMMODITIES
+    # ──────────────────────────────────────────────────────────────
     with tab_comm:
-        _commodity_screener()
+        st.markdown("Seleziona commodities da aggiungere al portafoglio:")
+
+        for category, symbols in COMMODITIES.items():
+            with st.expander(f"{category} ({len(symbols)} asset)"):
+                cols = st.columns(5)
+                for i, sym in enumerate(symbols):
+                    with cols[i % 5]:
+                        if st.button(sym, key=f"comm_{sym}", use_container_width=True):
+                            success, msg = _add_to_portfolio(sym)
+                            if success:
+                                st.success(msg)
+                                time.sleep(0.5)
+                                st.rerun()
+                            else:
+                                st.warning(msg)
+
+    # ──────────────────────────────────────────────────────────────
+    # TAB CRYPTO
+    # ──────────────────────────────────────────────────────────────
+    with tab_crypto:
+        st.markdown("Seleziona crypto da aggiungere al portafoglio:")
+
+        for category, symbols in CRYPTO.items():
+            cols = st.columns(5)
+            for i, sym in enumerate(symbols):
+                with cols[i % 5]:
+                    if st.button(sym, key=f"crypto_{sym}", use_container_width=True):
+                        success, msg = _add_to_portfolio(sym)
+                        if success:
+                            st.success(msg)
+                            time.sleep(0.5)
+                            st.rerun()
+                        else:
+                            st.warning(msg)
+
+    # ═══════════════════════════════════════════════════════════════
+    # PORTAFOGLIO CORRENTE
+    # ═══════════════════════════════════════════════════════════════
+    st.markdown("<br>", unsafe_allow_html=True)
+    current_pf = st.session_state.get("pf_symbols", [])
+
+    if current_pf:
+        st.markdown("---")
+        st.subheader(f"💼 Portafoglio Corrente ({len(current_pf)} titoli)")
+        st.markdown(" · ".join([f"`{s}`" for s in current_pf]))
+        st.info("💡 Vai su **Portafoglio** per gestire pesi e ottimizzazione")
+    else:
+        st.info("💼 Nessun titolo nel portafoglio. Aggiungine almeno 2 per iniziare!")
