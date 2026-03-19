@@ -7,44 +7,98 @@ import yfinance as yf
 import time
 
 
-# Liste predefinite per selezione rapida
+# Liste predefinite per selezione rapida (formato: ticker: nome)
 AZIONI_POPOLARI = {
-    "🇮🇹 Italia": ["ENI.MI", "ENEL.MI", "ISP.MI", "UCG.MI", "RACE.MI", "STLAM.MI", "TIT.MI", "AZM.MI", "G.MI", "TENR.MI"],
-    "🇺🇸 USA Tech": ["AAPL", "MSFT", "GOOGL", "AMZN", "NVDA", "META", "TSLA", "NFLX", "AMD", "INTC"],
-    "🇺🇸 USA Finance": ["JPM", "BAC", "WFC", "GS", "MS", "C", "BLK", "SCHW"],
-    "🇺🇸 USA Consumer": ["WMT", "HD", "MCD", "NKE", "SBUX", "TGT", "COST"],
-    "🇪🇺 Europa": ["AIR.PA", "SAN.MC", "OR.PA", "BNP.PA", "SU.PA", "SAP.DE", "SIE.DE"],
+    "🇮🇹 Italia": {
+        "ENI.MI": "ENI", "ENEL.MI": "Enel", "ISP.MI": "Intesa Sanpaolo",
+        "UCG.MI": "UniCredit", "RACE.MI": "Ferrari", "STLAM.MI": "Stellantis",
+        "TIT.MI": "Telecom Italia", "AZM.MI": "Azimut", "G.MI": "Generali", "TENR.MI": "Tenaris"
+    },
+    "🇺🇸 USA Tech": {
+        "AAPL": "Apple", "MSFT": "Microsoft", "GOOGL": "Alphabet (Google)",
+        "AMZN": "Amazon", "NVDA": "NVIDIA", "META": "Meta (Facebook)",
+        "TSLA": "Tesla", "NFLX": "Netflix", "AMD": "AMD", "INTC": "Intel"
+    },
+    "🇺🇸 USA Finance": {
+        "JPM": "JPMorgan Chase", "BAC": "Bank of America", "WFC": "Wells Fargo",
+        "GS": "Goldman Sachs", "MS": "Morgan Stanley", "C": "Citigroup",
+        "BLK": "BlackRock", "SCHW": "Charles Schwab"
+    },
+    "🇺🇸 USA Consumer": {
+        "WMT": "Walmart", "HD": "Home Depot", "MCD": "McDonald's",
+        "NKE": "Nike", "SBUX": "Starbucks", "TGT": "Target", "COST": "Costco"
+    },
+    "🇪🇺 Europa": {
+        "AIR.PA": "Airbus", "SAN.MC": "Santander", "OR.PA": "L'Oréal",
+        "BNP.PA": "BNP Paribas", "SU.PA": "Schneider Electric", "SAP.DE": "SAP", "SIE.DE": "Siemens"
+    },
 }
 
 ETF_POPOLARI = {
-    "🌍 Globali Azionari": ["SWDA.MI", "VWCE.DE", "CSPX.MI", "VUSA.L", "IWDA.AS", "EUNL.DE", "VHYL.L"],
-    "🇺🇸 USA": ["SPY", "QQQ", "VOO", "VTI", "IVV", "DIA", "IWM"],
-    "🇪🇺 Europa": ["EXS1.DE", "IQQE.DE", "MEUD.DE", "IUSE.L", "SMEA.L"],
-    "🌏 Emergenti": ["EIMI.MI", "AEEM.MI", "IEMG", "VWO", "EEM"],
-    "🏛️ Obbligazionari": ["VGEA.L", "IEAG.L", "AGGH.MI", "AGG", "BND", "GOVT"],
-    "💎 Commodities ETF": ["GLD", "SLV", "USO", "DBA", "PDBC"],
-    "📊 Tematici": ["ECAR.MI", "IUIT.MI", "HEAL.L", "RBOT.L", "ARKK", "ICLN"],
+    "🌍 Globali Azionari": {
+        "SWDA.MI": "iShares MSCI World", "VWCE.DE": "Vanguard FTSE All-World (Acc)",
+        "CSPX.MI": "iShares S&P 500", "VUSA.L": "Vanguard S&P 500",
+        "IWDA.AS": "iShares MSCI World (Acc)", "EUNL.DE": "Lyxor MSCI World", "VHYL.L": "Vanguard FTSE High Div"
+    },
+    "🇺🇸 USA": {
+        "SPY": "SPDR S&P 500", "QQQ": "Invesco QQQ (Nasdaq-100)", "VOO": "Vanguard S&P 500",
+        "VTI": "Vanguard Total Market", "IVV": "iShares S&P 500", "DIA": "SPDR Dow Jones", "IWM": "iShares Russell 2000"
+    },
+    "🇪🇺 Europa": {
+        "EXS1.DE": "iShares STOXX 600", "IQQE.DE": "iShares MSCI EMU", "MEUD.DE": "Amundi MSCI Europe",
+        "IUSE.L": "iShares MSCI Europe", "SMEA.L": "iShares MSCI Europe Small Cap"
+    },
+    "🌏 Emergenti": {
+        "EIMI.MI": "iShares MSCI EM IMI", "AEEM.MI": "Amundi MSCI EM", "IEMG": "iShares MSCI EM",
+        "VWO": "Vanguard FTSE EM", "EEM": "iShares MSCI EM"
+    },
+    "🏛️ Obbligazionari": {
+        "VGEA.L": "Vanguard EUR Govt Bond", "IEAG.L": "iShares EUR Agg Bond", "AGGH.MI": "iShares Global Agg Bond",
+        "AGG": "iShares US Agg Bond", "BND": "Vanguard Total Bond", "GOVT": "iShares US Treasury"
+    },
+    "💎 Commodities ETF": {
+        "GLD": "SPDR Gold Trust", "SLV": "iShares Silver", "USO": "US Oil Fund",
+        "DBA": "Invesco Agriculture", "PDBC": "Invesco Commodities"
+    },
+    "📊 Tematici": {
+        "ECAR.MI": "iShares Electric Vehicles", "IUIT.MI": "iShares Automation & Robotics", "HEAL.L": "iShares Healthcare",
+        "RBOT.L": "iShares Robotics", "ARKK": "ARK Innovation", "ICLN": "iShares Clean Energy"
+    },
 }
 
 COMMODITIES = {
-    "⚡ Energia": ["CL=F", "NG=F", "BZ=F"],
-    "🥇 Metalli Preziosi": ["GC=F", "SI=F", "PL=F", "PA=F"],
-    "🌾 Agricoltura": ["ZC=F", "ZW=F", "KC=F", "CC=F", "SB=F"],
-    "🏗️ Metalli Industriali": ["HG=F", "ALI=F"],
+    "⚡ Energia": {
+        "CL=F": "Petrolio WTI", "NG=F": "Gas Naturale", "BZ=F": "Petrolio Brent"
+    },
+    "🥇 Metalli Preziosi": {
+        "GC=F": "Oro", "SI=F": "Argento", "PL=F": "Platino", "PA=F": "Palladio"
+    },
+    "🌾 Agricoltura": {
+        "ZC=F": "Mais", "ZW=F": "Grano", "KC=F": "Caffè", "CC=F": "Cacao", "SB=F": "Zucchero"
+    },
+    "🏗️ Metalli Industriali": {
+        "HG=F": "Rame", "ALI=F": "Alluminio"
+    },
 }
 
 CRYPTO = {
-    "💰 Principali": ["BTC-USD", "ETH-USD", "BNB-USD", "XRP-USD", "ADA-USD", "SOL-USD", "DOGE-USD"],
+    "💰 Principali": {
+        "BTC-USD": "Bitcoin", "ETH-USD": "Ethereum", "BNB-USD": "Binance Coin",
+        "XRP-USD": "Ripple", "ADA-USD": "Cardano", "SOL-USD": "Solana", "DOGE-USD": "Dogecoin"
+    },
 }
 
 
 def _add_to_portfolio(symbol):
     """Aggiunge un simbolo al portafoglio"""
+    import logging
+    logger = logging.getLogger(__name__)
+
     if "pf_symbols" not in st.session_state:
         st.session_state["pf_symbols"] = []
 
     if symbol in st.session_state["pf_symbols"]:
-        return False, f"⚠️ {symbol} già nel portafoglio"
+        return False, f"⚠️ Già nel portafoglio"
 
     # Valida con Yahoo Finance, Morningstar, JustETF, o Investing.com
     try:
@@ -52,49 +106,51 @@ def _add_to_portfolio(symbol):
         from backend.data_collectors.morningstar import MorningstarCollector
         from backend.data_collectors.investing import investing_collector
 
-        # Determina il tipo di input
-        is_ms_url = MorningstarCollector.is_morningstar_url(symbol)
-        is_inv_url = investing_collector.is_investing_url(symbol)
+        # DEBUG: Log input
+        logger.info(f"[SCREENER] Validating: {symbol}")
+
+        # Determina il tipo di input PRIMA di caricare
+        is_ms_url = "morningstar" in symbol.lower() and ("http" in symbol.lower())
+        is_inv_url = "investing" in symbol.lower() and ("http" in symbol.lower())
         is_isin_code = is_isin(symbol)
 
+        logger.info(f"[SCREENER] Type detection: MS_URL={is_ms_url}, INV_URL={is_inv_url}, ISIN={is_isin_code}")
+
+        # Determina fonte prevista
+        if is_ms_url:
+            expected_source = "Morningstar"
+            fund_id = MorningstarCollector.extract_fund_id_from_url(symbol)
+            if not fund_id:
+                return False, f"❌ Impossibile estrarre ID da URL Morningstar. Verifica il formato."
+            display_name = f"Fondo {fund_id}"
+        elif is_inv_url:
+            expected_source = "Investing.com"
+            instrument = investing_collector.extract_instrument_from_url(symbol)
+            if not instrument:
+                return False, f"❌ Impossibile estrarre strumento da URL Investing.com. Verifica il formato."
+            display_name = instrument
+        elif is_isin_code:
+            expected_source = "Morningstar/JustETF"
+            display_name = f"ISIN {symbol}"
+        else:
+            expected_source = "Yahoo Finance"
+            display_name = f"Ticker {symbol}"
+
         # Test caricamento prezzi
+        logger.info(f"[SCREENER] Loading prices from {expected_source}...")
         prices_df = load_prices_smart([symbol], period="5d")
 
+        logger.info(f"[SCREENER] Result: {len(prices_df)} rows, columns={list(prices_df.columns)}")
+
         if prices_df.empty or symbol not in prices_df.columns:
-            # Messaggio errore dettagliato
-            if is_ms_url:
-                fund_id = MorningstarCollector.extract_fund_id_from_url(symbol)
-                if fund_id:
-                    return False, f"❌ Fondo {fund_id} non trovato su Morningstar. Verifica l'URL o prova con l'ISIN."
-                else:
-                    return False, f"❌ Impossibile estrarre ID da URL Morningstar. Formato non riconosciuto."
-            elif is_inv_url:
-                instrument = investing_collector.extract_instrument_from_url(symbol)
-                if instrument:
-                    return False, f"❌ Strumento {instrument} non trovato su Investing.com. Verifica l'URL."
-                else:
-                    return False, f"❌ Impossibile estrarre strumento da URL Investing.com. Formato non riconosciuto."
-            elif is_isin_code:
-                return False, f"❌ ISIN {symbol} non trovato su Morningstar/JustETF. Verifica il codice o prova con l'URL diretto."
-            else:
-                return False, f"❌ Ticker {symbol} non trovato su Yahoo Finance. Verifica il simbolo."
+            return False, f"❌ {display_name} non trovato su {expected_source}. Verifica l'input."
 
         st.session_state["pf_symbols"].append(symbol)
-
-        # Messaggio successo differenziato
-        if is_ms_url:
-            fund_id = MorningstarCollector.extract_fund_id_from_url(symbol)
-            return True, f"✅ Fondo {fund_id} aggiunto! (Morningstar)"
-        elif is_inv_url:
-            instrument = investing_collector.extract_instrument_from_url(symbol)
-            return True, f"✅ {instrument} aggiunto! (Investing.com)"
-        elif is_isin_code:
-            return True, f"✅ Fondo {symbol} aggiunto! (Morningstar/JustETF)"
-        else:
-            return True, f"✅ {symbol} aggiunto!"
+        return True, f"✅ {display_name} aggiunto! ({expected_source})"
 
     except Exception as e:
-        return False, f"❌ Errore: {str(e)[:100]}"
+        logger.error(f"[SCREENER] Exception: {e}", exc_info=True)
+        return False, f"❌ Errore: {str(e)[:150]}"
 
 
 def render():
@@ -184,7 +240,12 @@ def render():
         st.markdown("<br>", unsafe_allow_html=True)
         if st.button("➕ Aggiungi", key="add_manual", type="primary", use_container_width=True):
             if manual_symbol:
-                success, msg = _add_to_portfolio(manual_symbol.strip().upper())
+                # Non uppercase gli URL! Solo i ticker normali
+                clean_symbol = manual_symbol.strip()
+                if not ("http://" in clean_symbol or "https://" in clean_symbol):
+                    clean_symbol = clean_symbol.upper()
+
+                success, msg = _add_to_portfolio(clean_symbol)
                 if success:
                     st.success(msg)
                     time.sleep(0.5)
@@ -209,13 +270,15 @@ def render():
     with tab_stocks:
         st.markdown("Seleziona azioni da aggiungere al portafoglio:")
 
-        for region, symbols in AZIONI_POPOLARI.items():
-            with st.expander(f"{region} ({len(symbols)} titoli)"):
-                cols = st.columns(5)
-                for i, sym in enumerate(symbols):
-                    with cols[i % 5]:
-                        if st.button(sym, key=f"stock_{sym}", use_container_width=True):
-                            success, msg = _add_to_portfolio(sym)
+        for region, stocks_dict in AZIONI_POPOLARI.items():
+            with st.expander(f"{region} ({len(stocks_dict)} titoli)"):
+                cols = st.columns(4)
+                for i, (ticker, name) in enumerate(stocks_dict.items()):
+                    with cols[i % 4]:
+                        # Tronca nome se troppo lungo
+                        display_name = name[:15] + "..." if len(name) > 15 else name
+                        if st.button(f"{display_name}\n({ticker})", key=f"stock_{ticker}", use_container_width=True, help=f"{name} - {ticker}"):
+                            success, msg = _add_to_portfolio(ticker)
                             if success:
                                 st.success(msg)
                                 time.sleep(0.5)
@@ -229,13 +292,14 @@ def render():
     with tab_etf:
         st.markdown("Seleziona ETF da aggiungere al portafoglio:")
 
-        for category, symbols in ETF_POPOLARI.items():
-            with st.expander(f"{category} ({len(symbols)} ETF)"):
-                cols = st.columns(5)
-                for i, sym in enumerate(symbols):
-                    with cols[i % 5]:
-                        if st.button(sym, key=f"etf_{sym}", use_container_width=True):
-                            success, msg = _add_to_portfolio(sym)
+        for category, etfs_dict in ETF_POPOLARI.items():
+            with st.expander(f"{category} ({len(etfs_dict)} ETF)"):
+                cols = st.columns(4)
+                for i, (ticker, name) in enumerate(etfs_dict.items()):
+                    with cols[i % 4]:
+                        display_name = name[:18] + "..." if len(name) > 18 else name
+                        if st.button(f"{display_name}\n({ticker})", key=f"etf_{ticker}", use_container_width=True, help=f"{name} - {ticker}"):
+                            success, msg = _add_to_portfolio(ticker)
                             if success:
                                 st.success(msg)
                                 time.sleep(0.5)
@@ -249,13 +313,13 @@ def render():
     with tab_comm:
         st.markdown("Seleziona commodities da aggiungere al portafoglio:")
 
-        for category, symbols in COMMODITIES.items():
-            with st.expander(f"{category} ({len(symbols)} asset)"):
-                cols = st.columns(5)
-                for i, sym in enumerate(symbols):
-                    with cols[i % 5]:
-                        if st.button(sym, key=f"comm_{sym}", use_container_width=True):
-                            success, msg = _add_to_portfolio(sym)
+        for category, comm_dict in COMMODITIES.items():
+            with st.expander(f"{category} ({len(comm_dict)} asset)"):
+                cols = st.columns(4)
+                for i, (ticker, name) in enumerate(comm_dict.items()):
+                    with cols[i % 4]:
+                        if st.button(f"{name}\n({ticker})", key=f"comm_{ticker}", use_container_width=True, help=f"{name} - {ticker}"):
+                            success, msg = _add_to_portfolio(ticker)
                             if success:
                                 st.success(msg)
                                 time.sleep(0.5)
@@ -269,12 +333,12 @@ def render():
     with tab_crypto:
         st.markdown("Seleziona crypto da aggiungere al portafoglio:")
 
-        for category, symbols in CRYPTO.items():
-            cols = st.columns(5)
-            for i, sym in enumerate(symbols):
-                with cols[i % 5]:
-                    if st.button(sym, key=f"crypto_{sym}", use_container_width=True):
-                        success, msg = _add_to_portfolio(sym)
+        for category, crypto_dict in CRYPTO.items():
+            cols = st.columns(4)
+            for i, (ticker, name) in enumerate(crypto_dict.items()):
+                with cols[i % 4]:
+                    if st.button(f"{name}\n({ticker})", key=f"crypto_{ticker}", use_container_width=True, help=f"{name} - {ticker}"):
+                        success, msg = _add_to_portfolio(ticker)
                         if success:
                             st.success(msg)
                             time.sleep(0.5)
