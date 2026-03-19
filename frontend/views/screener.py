@@ -46,15 +46,25 @@ def _add_to_portfolio(symbol):
     if symbol in st.session_state["pf_symbols"]:
         return False, f"⚠️ {symbol} già nel portafoglio"
 
-    # Valida con Yahoo Finance
+    # Valida con Yahoo Finance O Morningstar (ISIN)
     try:
-        ticker = yf.Ticker(symbol)
-        hist = ticker.history(period="5d")
-        if hist.empty:
-            return False, f"❌ {symbol} non trovato"
+        from backend.data_loader import load_prices_smart, is_isin
+
+        # Test caricamento prezzi
+        prices_df = load_prices_smart([symbol], period="5d")
+
+        if prices_df.empty or symbol not in prices_df.columns:
+            source = "Morningstar" if is_isin(symbol) else "Yahoo Finance"
+            return False, f"❌ {symbol} non trovato su {source}"
 
         st.session_state["pf_symbols"].append(symbol)
-        return True, f"✅ {symbol} aggiunto!"
+
+        # Messaggio differenziato per tipo
+        if is_isin(symbol):
+            return True, f"✅ Fondo {symbol} aggiunto! (Morningstar)"
+        else:
+            return True, f"✅ {symbol} aggiunto!"
+
     except Exception as e:
         return False, f"❌ Errore: {str(e)[:50]}"
 
