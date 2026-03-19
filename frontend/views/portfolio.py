@@ -11,23 +11,15 @@ from frontend.components.charts import (
     line_chart, pie_chart, efficient_frontier_chart, heatmap_correlation
 )
 from backend.analyzers.portfolio_optimizer import PortfolioOptimizer
+from backend.data_loader import load_prices_smart
 
 
 def _load_prices(symbols, period="3y"):
-    prices = {}
-    for sym in symbols:
-        try:
-            t = yf.Ticker(sym)
-            h = t.history(period=period, auto_adjust=True)
-            if not h.empty:
-                prices[sym] = h["Close"]
-            time.sleep(0.3)
-        except:
-            pass
-    if prices:
-        df = pd.DataFrame(prices).dropna()
-        return df
-    return pd.DataFrame()
+    """
+    Carica prezzi da Yahoo Finance O Morningstar
+    Supporta ticker standard E ISIN fondi
+    """
+    return load_prices_smart(symbols, period=period)
 
 
 def render():

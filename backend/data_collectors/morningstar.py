@@ -131,3 +131,80 @@ class MorningstarCollector:
         for s in seed_data:
             s["source"] = "Morningstar"
         return seed_data
+
+    def get_historical_prices_by_isin(self, isin: str, years: int = 3) -> Optional[pd.Series]:
+        """
+        Ottiene prezzi storici per un fondo tramite ISIN
+
+        Args:
+            isin: Codice ISIN del fondo (es: IT0005239881)
+            years: Anni di storico da recuperare (default 3)
+
+        Returns:
+            pandas Series con date come index e prezzi come values
+            None se non riesce a recuperare i dati
+        """
+        try:
+            # Step 1: Cerca il fondo per ISIN
+            search_results = self.search(isin)
+            if not search_results:
+                logger.warning(f"ISIN {isin} non trovato su Morningstar")
+                return None
+
+            fund = search_results[0]  # Prendi primo risultato
+            fund_id = fund.get("id")
+            fund_name = fund.get("name", isin)
+
+            logger.info(f"Trovato fondo: {fund_name} (ID: {fund_id})")
+
+            # Step 2: Prova a ottenere dati storici via API chart
+            # Morningstar usa un endpoint chart per i grafici
+            import datetime
+            end_date = datetime.datetime.now()
+            start_date = end_date - datetime.timedelta(days=years*365)
+
+            chart_url = f"https://www.morningstar.it/it/funds/snapshot/snapshot.aspx"
+            params = {
+                "id": fund_id,
+                "tab": "chart",
+            }
+
+            r = self.session.get(chart_url, params=params, timeout=15)
+            soup = BeautifulSoup(r.content, "lxml")
+
+            # Step 3: Cerca dati nel JavaScript della pagina
+            # Morningstar inietta dati chart in variabili JS
+            scripts = soup.find_all("script")
+            prices_data = {}
+
+            for script in scripts:
+                if script.string and "chartData" in script.string:
+                    # Estrai dati JSON dal JavaScript
+                    import json
+                    match = re.search(r'chartData\s*=\s*(\[.*?\]);', script.string, re.DOTALL)
+                    if match:
+                        try:
+                            data = json.loads(match.group(1))
+                            # Converti in formato {data: prezzo}
+                            for point in data:
+                                if len(point) >= 2:
+                                    # point[0] è timestamp, point[1] è prezzo
+                                    date = pd.to_datetime(point[0], unit='ms')
+                                    price = float(point[1])
+                                    prices_data[date] = price
+                        except Exception as e:
+                            logger.debug(f"JSON parse error: {e}")
+                            continue
+
+            if prices_data:
+                # Converti in pandas Series e ordina per data
+                series = pd.Series(prices_data).sort_index()
+                logger.info(f"Recuperati {len(series)} punti dati per {fund_name}")
+                return series
+            else:
+                logger.warning(f"Nessun dato storico trovato per {isin}")
+                return None
+
+        except Exception as e:
+            logger.error(f"Errore recupero prezzi per ISIN {isin}: {e}")
+            return None

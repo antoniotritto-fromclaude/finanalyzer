@@ -9,22 +9,15 @@ import time
 from frontend.styles.design import badge, color_pct, chip
 from frontend.components.charts import prediction_chart, pie_chart, bar_chart
 from backend.models.predictor import PortfolioPredictor
+from backend.data_loader import load_prices_smart
 
 
 def _load_prices(symbols, period="3y"):
-    prices = {}
-    for sym in symbols:
-        try:
-            t = yf.Ticker(sym)
-            h = t.history(period=period, auto_adjust=True)
-            if not h.empty:
-                prices[sym] = h["Close"]
-            time.sleep(0.3)
-        except:
-            pass
-    if prices:
-        return pd.DataFrame(prices).dropna()
-    return pd.DataFrame()
+    """
+    Carica prezzi da Yahoo Finance O Morningstar
+    Supporta ticker standard E ISIN fondi
+    """
+    return load_prices_smart(symbols, period=period)
 
 
 def _metric_html(label, value, sub="", color="#2471c8"):

@@ -71,9 +71,10 @@ def render():
             <li>Clicca "➕ Aggiungi" per inserire nel portafoglio</li>
             <li>Vai su <b>Portafoglio</b> per gestire e ottimizzare</li>
         </ol>
-        <div style="margin-top:12px;padding:10px;background:#fef3c7;border-radius:8px;font-size:0.88rem;">
-            ⚠️ <b>Importante:</b> Supportati solo asset con ticker Yahoo Finance (Azioni, ETF, Commodities, Crypto).
-            <br>❌ <b>Non supportati:</b> Fondi comuni con ISIN (es: IT0005239881) - usa ETF equivalenti invece!
+        <div style="margin-top:12px;padding:10px;background:#d1fae5;border-radius:8px;font-size:0.88rem;">
+            ✅ <b>Novità:</b> Supporto COMPLETO fondi con ISIN!
+            <br>💡 <b>Puoi aggiungere:</b> Ticker Yahoo Finance (AAPL, SPY) O ISIN Morningstar (IT0005239881)
+            <br>📊 Dati aggiornati 1x/giorno, cache automatica per velocità
         </div>
     </div>
     """, unsafe_allow_html=True)
@@ -88,9 +89,9 @@ def render():
     col1, col2 = st.columns([4, 1])
     with col1:
         manual_symbol = st.text_input(
-            "Inserisci simbolo Yahoo Finance",
-            placeholder="Es: AAPL, ENI.MI, BTC-USD, GC=F",
-            help="Cerca qualsiasi titolo, ETF, commodity o crypto",
+            "Inserisci Ticker o ISIN",
+            placeholder="Es: AAPL, ENI.MI, IT0005239881, BTC-USD",
+            help="Supporta: Ticker Yahoo Finance O ISIN fondi Morningstar",
             key="manual_search"
         )
     with col2:
