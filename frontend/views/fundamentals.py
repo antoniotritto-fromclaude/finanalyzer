@@ -15,13 +15,29 @@ def _get_data(symbol: str):
         t = yf.Ticker(symbol)
         hist_1y = t.history(period="1y")
         hist_5y = t.history(period="5y")
+
+        # Prova a caricare info, ma gestisci fallimenti comuni
+        info = {}
+        info_loaded = False
         try:
-            info = t.info
-        except:
-            info = {}
-        return t, hist_1y, hist_5y, info
+            raw_info = t.info
+            # Verifica che info contenga dati validi (non solo chiavi vuote)
+            if raw_info and len(raw_info) > 5:
+                info = raw_info
+                info_loaded = True
+        except Exception as e:
+            # Yahoo Finance info spesso fallisce per titoli non-US
+            pass
+
+        # Calcola metriche base dai dati storici se info non disponibile
+        if not info_loaded and not hist_1y.empty:
+            info["_calculated"] = True
+            info["fiftyTwoWeekHigh"] = hist_1y["High"].max()
+            info["fiftyTwoWeekLow"] = hist_1y["Low"].min()
+
+        return t, hist_1y, hist_5y, info, info_loaded
     except Exception as e:
-        return None, pd.DataFrame(), pd.DataFrame(), {}
+        return None, pd.DataFrame(), pd.DataFrame(), {}, False
 
 
 def _metric_card(label: str, value: str, sub: str = "", color: str = "#2471c8"):
@@ -42,7 +58,9 @@ def render():
         <b>📈 Fonti Dati:</b> Questa analisi utilizza dati da <b>Yahoo Finance</b> in tempo reale.
         Include prezzi, metriche fondamentali, grafici storici e statistiche di rendimento.
         <br><br>
-        💡 <b>Tip:</b> Puoi aggiungere link personalizzati a fonti esterne (FINVIZ, Morningstar, etc.) dopo l'analisi.
+        💡 <b>Nota:</b> Titoli USA (AAPL, MSFT) hanno dati più completi.
+        Titoli internazionali (es. *.MI, *.DE) potrebbero mostrare solo prezzi e grafici.
+        Per fondi usa <b>Screener</b> con codici ISIN.
     </div>
     """, unsafe_allow_html=True)
 
@@ -69,11 +87,19 @@ def render():
     symbol = st.session_state.get("fund_symbol", symbol)
 
     with st.spinner(f"Caricamento dati per {symbol}..."):
-        ticker, hist_1y, hist_5y, info = _get_data(symbol)
+        ticker, hist_1y, hist_5y, info, info_loaded = _get_data(symbol)
 
     if hist_1y.empty:
         st.error(f"❌ Nessun dato trovato per **{symbol}**. Verifica il simbolo.")
         return
+
+    # Avviso se info non caricato
+    if not info_loaded:
+        st.warning("""
+        ⚠️ **Dati fondamentali limitati**: Yahoo Finance non ha restituito dati completi per questo titolo.
+        I grafici e l'analisi dei prezzi sono disponibili, ma alcune metriche (P/E, EPS, Market Cap) potrebbero non essere disponibili.
+        """)
+        st.markdown("<br>", unsafe_allow_html=True)
 
     # ── Header titolo ──────────────────────────────────────────────────────────
     name  = info.get("longName", info.get("shortName", symbol))
@@ -105,17 +131,22 @@ def render():
     # ── Metriche fondamentali ─────────────────────────────────────────────────
     st.markdown("<br>", unsafe_allow_html=True)
     mc = st.columns(6)
+
+    # Fix per dividendYield: controlla None esplicitamente
+    div_yield = info.get("dividendYield")
+    div_yield_pct = div_yield * 100 if div_yield is not None else None
+
     metrics = [
         ("P/E (TTM)",      info.get("trailingPE"),       "{:.1f}"),
         ("EPS (TTM)",      info.get("trailingEps"),      "{:.2f}"),
         ("P/B Ratio",      info.get("priceToBook"),      "{:.2f}"),
-        ("Div. Yield",     info.get("dividendYield", 0) and info.get("dividendYield")*100, "{:.2f}%"),
+        ("Div. Yield",     div_yield_pct,                "{:.2f}%"),
         ("Beta",           info.get("beta"),             "{:.2f}"),
         ("52W High",       info.get("fiftyTwoWeekHigh"), "{:.2f}"),
     ]
     for col, (label, val, fmt) in zip(mc, metrics):
         with col:
-            v_str = fmt.format(val) if val else "N/D"
+            v_str = fmt.format(val) if val is not None else "N/D"
             st.markdown(_metric_card(label, v_str), unsafe_allow_html=True)
 
     # ── Grafici ───────────────────────────────────────────────────────────────
