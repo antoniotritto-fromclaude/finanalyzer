@@ -44,30 +44,55 @@ def render():
     # ── Aggiungi simbolo ──────────────────────────────────────────────────────
     col_a, col_b = st.columns([4, 1])
     with col_a:
-        new_sym = st.text_input("Aggiungi simbolo (Yahoo Finance)",
-                                placeholder="Es: AAPL, ENI.MI, VWCE.DE, SPY",
-                                key="pf_add_input")
+        new_sym = st.text_input(
+            "Aggiungi simbolo (Yahoo Finance)",
+            placeholder="Es: AAPL, ENI.MI, VWCE.DE, SPY",
+            key="pf_add_input",
+            help="Inserisci il simbolo Yahoo Finance del titolo da aggiungere"
+        )
     with col_b:
         st.markdown("<br>", unsafe_allow_html=True)
-        if st.button("➕ Aggiungi", use_container_width=True):
-            sym = new_sym.strip().upper()
-            if sym and sym not in st.session_state["pf_symbols"]:
-                st.session_state["pf_symbols"].append(sym)
-                st.rerun()
+        add_clicked = st.button("➕ Aggiungi", use_container_width=True, type="primary")
 
-    # Portfolio rapido
-    st.markdown("**Portafogli predefiniti:**")
-    pre_cols = st.columns(3)
-    presets = {
-        "🌍 Globale Bilanciato": ["SWDA.MI","EIMI.MI","CSSPX.MI"],
-        "🇮🇹 Borsa Italiana":    ["ENI.MI","ISP.MI","ENEL.MI","RACE.MI"],
-        "💻 Tech USA":           ["AAPL","MSFT","GOOGL","NVDA"],
-    }
-    for col, (name, syms) in zip(pre_cols, presets.items()):
-        with col:
-            if st.button(name, use_container_width=True):
-                st.session_state["pf_symbols"] = syms.copy()
-                st.rerun()
+    # Gestione aggiunta simbolo
+    if add_clicked and new_sym:
+        sym = new_sym.strip().upper()
+        if not sym:
+            st.warning("⚠️ Inserisci un simbolo valido")
+        elif sym in st.session_state["pf_symbols"]:
+            st.warning(f"⚠️ {sym} è già nel portafoglio")
+        else:
+            # Valida simbolo con Yahoo Finance
+            with st.spinner(f"Verifica {sym}..."):
+                try:
+                    test_ticker = yf.Ticker(sym)
+                    test_hist = test_ticker.history(period="5d")
+                    if test_hist.empty:
+                        st.error(f"❌ Simbolo {sym} non trovato su Yahoo Finance")
+                    else:
+                        st.session_state["pf_symbols"].append(sym)
+                        st.success(f"✅ {sym} aggiunto al portafoglio!")
+                        time.sleep(0.5)
+                        st.rerun()
+                except Exception as e:
+                    st.error(f"❌ Errore: {sym} non valido ({str(e)})")
+
+    # Portafogli rapidi (opzionale, in expander)
+    with st.expander("📋 Portafogli Rapidi (Opzionale)"):
+        st.markdown("Carica un portafoglio predefinito per iniziare velocemente:")
+        pre_cols = st.columns(3)
+        presets = {
+            "🌍 Globale Bilanciato": ["SWDA.MI","EIMI.MI","CSSPX.MI"],
+            "🇮🇹 Borsa Italiana":    ["ENI.MI","ISP.MI","ENEL.MI","RACE.MI"],
+            "💻 Tech USA":           ["AAPL","MSFT","GOOGL","NVDA"],
+        }
+        for col, (name, syms) in zip(pre_cols, presets.items()):
+            with col:
+                if st.button(name, use_container_width=True, key=f"preset_{name}"):
+                    st.session_state["pf_symbols"] = syms.copy()
+                    st.success(f"✅ Caricato: {name}")
+                    time.sleep(0.5)
+                    st.rerun()
 
     # ── Portfolio corrente ────────────────────────────────────────────────────
     symbols = st.session_state["pf_symbols"]

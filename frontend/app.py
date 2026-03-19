@@ -75,6 +75,7 @@ with st.sidebar:
         ("📊", "Quantalys", "#22c55e"),
         ("💹", "Investing.com", "#22c55e"),
         ("📉", "TradingView", "#22c55e"),
+        ("🎯", "FINVIZ", "#22c55e"),
     ]
     for icon, name, color in sources:
         st.markdown(f"""

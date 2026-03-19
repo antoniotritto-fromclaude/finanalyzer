@@ -35,13 +35,27 @@ def _metric_card(label: str, value: str, sub: str = "", color: str = "#2471c8"):
 
 def render():
     st.title("📊 Analisi Fondamentale")
-    st.markdown("Analisi dettagliata di un singolo titolo")
-    st.markdown("---")
+
+    # Info fonti dati
+    st.markdown("""
+    <div class="fin-card" style="background:#f0f9ff;border-left:4px solid #0ea5c9;padding:14px 18px;">
+        <b>📈 Fonti Dati:</b> Questa analisi utilizza dati da <b>Yahoo Finance</b> in tempo reale.
+        Include prezzi, metriche fondamentali, grafici storici e statistiche di rendimento.
+        <br><br>
+        💡 <b>Tip:</b> Puoi aggiungere link personalizzati a fonti esterne (FINVIZ, Morningstar, etc.) dopo l'analisi.
+    </div>
+    """, unsafe_allow_html=True)
+
+    st.markdown("<br>", unsafe_allow_html=True)
 
     col_sym, col_btn = st.columns([4, 1])
     with col_sym:
-        symbol = st.text_input("Simbolo Titolo", value="AAPL",
-                               placeholder="Es: AAPL, ENI.MI, MSFT, VWCE.DE")
+        symbol = st.text_input(
+            "Simbolo Titolo (Yahoo Finance)",
+            value="AAPL",
+            placeholder="Es: AAPL, ENI.MI, MSFT, VWCE.DE, BTC-USD",
+            help="Inserisci il simbolo Yahoo Finance del titolo da analizzare"
+        )
     with col_btn:
         st.markdown("<br>", unsafe_allow_html=True)
         search = st.button("🔍 Analizza", type="primary", use_container_width=True)
@@ -160,3 +174,37 @@ def render():
         st.markdown("<br>", unsafe_allow_html=True)
         with st.expander("📝 Descrizione Azienda"):
             st.write(desc)
+
+    # ── Link Fonti Esterne ────────────────────────────────────────────────────
+    st.markdown("<br>", unsafe_allow_html=True)
+    with st.expander("🔗 Fonti Esterne e Link Utili"):
+        st.markdown(f"""
+        Approfondisci l'analisi con queste fonti esterne:
+
+        **Dati Fondamentali:**
+        - [Yahoo Finance - {symbol}](https://finance.yahoo.com/quote/{symbol})
+        - [FINVIZ - {symbol}](https://finviz.com/quote.ashx?t={symbol})
+        - [MarketWatch - {symbol}](https://www.marketwatch.com/investing/stock/{symbol})
+
+        **Analisi Tecnica:**
+        - [TradingView - {symbol}](https://www.tradingview.com/symbols/{symbol}/)
+        - [Investing.com - {symbol}](https://www.investing.com/search/?q={symbol})
+
+        **News & Sentiment:**
+        - [Google Finance - {symbol}](https://www.google.com/finance/quote/{symbol})
+        - [Seeking Alpha - {symbol}](https://seekingalpha.com/symbol/{symbol})
+
+        ---
+
+        💡 **Aggiungi Link Custom:**
+        """)
+
+        custom_url = st.text_input(
+            "URL personalizzato (opzionale)",
+            placeholder="https://esempio.com/analisi-titolo",
+            key=f"custom_url_{symbol}"
+        )
+        if custom_url:
+            st.markdown(f"🔗 [Apri Link Custom]({custom_url})")
+
+        st.info("💡 Queste risorse esterne possono fornire analisi aggiuntive, dati in tempo reale e sentiment di mercato.")

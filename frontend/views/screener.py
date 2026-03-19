@@ -230,8 +230,26 @@ def _commodity_screener():
 
 def render():
     st.title("🔍 Screener Avanzato")
-    st.markdown("Ricerca e analisi di ETF, Fondi, Obbligazioni e Commodities")
-    st.markdown("---")
+
+    # Header con istruzioni chiare
+    st.markdown("""
+    <div class="fin-card" style="background:linear-gradient(135deg, #dbeafe, #f0f9ff);border-left:4px solid #2471c8;padding:16px 20px;">
+        <div style="font-size:1.05rem;font-weight:700;color:#1e40af;margin-bottom:8px;">
+            📊 Come funziona lo Screener
+        </div>
+        <ul style="margin:8px 0 0 0;padding-left:20px;line-height:1.8;">
+            <li><b>📡 ETF</b>: Filtra ETF per categoria, TER, tipo di replica e distribuzione</li>
+            <li><b>⭐ Fondi</b>: Trova i migliori fondi comuni da Morningstar e Quantalys</li>
+            <li><b>🏛️ Obbligazioni</b>: Cerca BTP, Corporate Bond e altri titoli di debito</li>
+            <li><b>🌾 Commodities</b>: Monitora prezzi live di materie prime e metalli</li>
+        </ul>
+        <div style="margin-top:12px;padding:10px;background:#fef3c7;border-radius:8px;font-size:0.88rem;">
+            💡 <b>Tip</b>: Per analizzare un titolo nel dettaglio, vai su <b>Analisi Titolo</b> e inserisci il simbolo Yahoo Finance
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
+
+    st.markdown("<br>", unsafe_allow_html=True)
 
     tab_etf, tab_fund, tab_bond, tab_comm = st.tabs([
         "📡 ETF", "⭐ Fondi", "🏛️ Obbligazioni", "🌾 Commodities"

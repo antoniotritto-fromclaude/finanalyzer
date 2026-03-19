@@ -5,16 +5,35 @@ import streamlit as st
 import pandas as pd
 import numpy as np
 import plotly.graph_objects as go
+import yfinance as yf
+import time
+from datetime import datetime, timedelta
 from frontend.styles.design import badge, card_metric, color_pct, chip, stars, MAIN_CSS
 from frontend.components.charts import line_chart, bar_chart, seasonality_bar
 
-MARKET_OVERVIEW = [
-    {"name":"S&P 500","symbol":"^GSPC","price":"5,456.30","change":+0.38,"ytd":+16.2},
-    {"name":"FTSE MIB","symbol":"FTSEMIB.MI","price":"33,820","change":-0.21,"ytd":+9.4},
-    {"name":"EURO STOXX 50","symbol":"^STOXX50E","price":"4,871","change":+0.12,"ytd":+8.1},
-    {"name":"DAX","symbol":"^GDAXI","price":"18,304","change":+0.28,"ytd":+11.3},
-    {"name":"Nasdaq","symbol":"^IXIC","price":"17,192","change":+0.55,"ytd":+18.7},
-    {"name":"Gold","symbol":"GC=F","price":"2,335","change":-0.14,"ytd":+14.3},
+# Questi saranno caricati dinamicamente da Yahoo Finance
+MARKET_INDICES = [
+    {"name":"S&P 500","symbol":"^GSPC"},
+    {"name":"FTSE MIB","symbol":"FTSEMIB.MI"},
+    {"name":"EURO STOXX 50","symbol":"^STOXX50E"},
+    {"name":"DAX","symbol":"^GDAXI"},
+    {"name":"Nasdaq","symbol":"^IXIC"},
+    {"name":"Gold","symbol":"GC=F"},
+]
+
+# Asset per grafici 6 mesi
+ASSET_6M_CHARTS = [
+    {"name":"EURO STOXX 600","symbol":"^STOXX","color":"#2471c8"},
+    {"name":"S&P 500","symbol":"^GSPC","color":"#22c55e"},
+    {"name":"Dow Jones","symbol":"^DJI","color":"#0ea5c9"},
+    {"name":"Russell 1000","symbol":"^RUI","color":"#8b5cf6"},
+    {"name":"Petrolio (WTI)","symbol":"CL=F","color":"#f59e0b"},
+    {"name":"Gas Naturale","symbol":"NG=F","color":"#ef4444"},
+    {"name":"Bitcoin","symbol":"BTC-USD","color":"#f59e0b"},
+    {"name":"Gold","symbol":"GC=F","color":"#fbbf24"},
+    {"name":"Silver","symbol":"SI=F","color":"#9ca3af"},
+    {"name":"Cacao","symbol":"CC=F","color":"#92400e"},
+    {"name":"Caffè","symbol":"KC=F","color":"#78350f"},
 ]
 
 SECTOR_PERF = {
@@ -43,14 +62,68 @@ TOP_MOVERS = [
 ]
 
 
+@st.cache_data(ttl=300)  # Cache 5 minuti
+def _load_market_indices():
+    """Carica dati real-time degli indici principali"""
+    results = []
+    for idx in MARKET_INDICES:
+        try:
+            ticker = yf.Ticker(idx["symbol"])
+            hist = ticker.history(period="ytd")
+            if hist.empty:
+                continue
+
+            last_price = hist["Close"].iloc[-1]
+            prev_price = hist["Close"].iloc[-2] if len(hist) > 1 else last_price
+            change_pct = ((last_price - prev_price) / prev_price) * 100
+
+            # YTD return
+            first_price = hist["Close"].iloc[0]
+            ytd_return = ((last_price - first_price) / first_price) * 100
+
+            results.append({
+                "name": idx["name"],
+                "symbol": idx["symbol"],
+                "price": f"{last_price:,.2f}",
+                "change": change_pct,
+                "ytd": ytd_return,
+            })
+            time.sleep(0.1)  # Rate limiting
+        except Exception as e:
+            st.warning(f"⚠️ Errore caricamento {idx['name']}: {e}")
+            continue
+    return results
+
+
+@st.cache_data(ttl=300)  # Cache 5 minuti
+def _load_asset_6m_data(symbol):
+    """Carica dati ultimi 6 mesi per un asset"""
+    try:
+        ticker = yf.Ticker(symbol)
+        hist = ticker.history(period="6mo")
+        if not hist.empty:
+            return hist["Close"]
+    except:
+        pass
+    return pd.Series()
+
+
 def render():
     st.title("📊 Dashboard Mercati")
     st.markdown("---")
 
     # ── Market Overview ────────────────────────────────────────────────────────
-    st.subheader("🌍 Mercati Principali")
-    cols = st.columns(len(MARKET_OVERVIEW))
-    for col, mkt in zip(cols, MARKET_OVERVIEW):
+    st.subheader("🌍 Mercati Principali – Dati Real-Time")
+
+    with st.spinner("Caricamento indici..."):
+        market_data = _load_market_indices()
+
+    if not market_data:
+        st.error("❌ Impossibile caricare dati di mercato")
+        return
+
+    cols = st.columns(len(market_data))
+    for col, mkt in zip(cols, market_data):
         with col:
             pos = mkt["change"] >= 0
             chg_str = f"{'▲' if pos else '▼'} {abs(mkt['change']):.2f}%"
@@ -65,40 +138,76 @@ def render():
 
     st.markdown("<br>", unsafe_allow_html=True)
 
-    # ── Main row ──────────────────────────────────────────────────────────────
-    col_left, col_right = st.columns([3, 2], gap="medium")
+    # ── Grafici 6 Mesi Asset ──────────────────────────────────────────────────
+    st.subheader("📈 Performance Ultimi 6 Mesi – Asset Globali")
 
-    with col_left:
-        st.subheader("📅 Stagionalità S&P 500")
-        fig = seasonality_bar(MONTHLY_SEASONALITY, height=260)
-        fig.update_layout(
-            paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(255,255,255,0.85)",
-        )
-        st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": False})
+    with st.spinner("Caricamento dati asset..."):
+        asset_data = {}
+        for asset in ASSET_6M_CHARTS:
+            data = _load_asset_6m_data(asset["symbol"])
+            if not data.empty:
+                asset_data[asset["name"]] = {
+                    "data": data,
+                    "color": asset["color"]
+                }
+            time.sleep(0.1)
 
-        # Ring metrics Seasonality
-        ring_cols = st.columns(5)
-        periods = [("1 Anno","12.7%","#22c55e"),("3 Anni","5.9%","#f59e0b"),
-                   ("5 Anni","9.6%","#2471c8"),("10 Anni","6.8%","#8b5cf6"),("20 Anni","7.4%","#0ea5c9")]
-        for rc, (label, val, color) in zip(ring_cols, periods):
-            with rc:
-                st.markdown(f"""
-                <div class="ring-metric">
-                    <div class="ring-label">{label}</div>
-                    <div class="ring-value" style="color:{color};">{val}</div>
-                    <div class="ring-sub" style="color:{color};">Media</div>
-                </div>
-                """, unsafe_allow_html=True)
+    if not asset_data:
+        st.warning("⚠️ Impossibile caricare dati asset")
+    else:
+        # Grid 3x4 per 11 asset (ultima cella vuota)
+        for i in range(0, len(asset_data), 3):
+            cols = st.columns(3)
+            items = list(asset_data.items())[i:i+3]
 
-    with col_right:
-        st.subheader("🏭 Settori – Performance YTD")
-        sectors = list(SECTOR_PERF.keys())
-        values  = list(SECTOR_PERF.values())
-        colors  = ["#22c55e" if v >= 0 else "#ef4444" for v in values]
-        fig2 = bar_chart(values, sectors, title="", colors=colors, horizontal=True, height=300)
-        fig2.update_traces(texttemplate=[f"{v:+.1f}%" for v in values], textposition="outside")
-        fig2.update_layout(paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(255,255,255,0.85)")
-        st.plotly_chart(fig2, use_container_width=True, config={"displayModeBar": False})
+            for col, (name, info) in zip(cols, items):
+                with col:
+                    data = info["data"]
+                    color = info["color"]
+
+                    # Performance 6M
+                    perf_6m = ((data.iloc[-1] / data.iloc[0]) - 1) * 100
+
+                    # Mini chart
+                    fig = go.Figure()
+                    fig.add_trace(go.Scatter(
+                        x=data.index,
+                        y=data.values,
+                        mode="lines",
+                        line=dict(color=color, width=2),
+                        fill="tozeroy",
+                        fillcolor=f"rgba{tuple(list(bytes.fromhex(color[1:])) + [0.2])}",
+                        name=name,
+                        hovertemplate="%{y:.2f}<extra></extra>"
+                    ))
+                    fig.update_layout(
+                        height=180,
+                        margin=dict(l=0, r=0, t=35, b=20),
+                        paper_bgcolor="rgba(0,0,0,0)",
+                        plot_bgcolor="rgba(255,255,255,0.85)",
+                        title=dict(
+                            text=f"<b>{name}</b><br><span style='font-size:1.2rem;color:{color};'>{perf_6m:+.1f}%</span>",
+                            font=dict(size=12),
+                            x=0.5,
+                            xanchor="center"
+                        ),
+                        showlegend=False,
+                        xaxis=dict(showgrid=False, showticklabels=False),
+                        yaxis=dict(showgrid=True, gridcolor="#e5e7eb", showticklabels=False),
+                    )
+                    st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": False})
+
+    st.markdown("<br>", unsafe_allow_html=True)
+
+    # ── Settori Performance ───────────────────────────────────────────────────
+    st.subheader("🏭 Settori – Performance YTD")
+    sectors = list(SECTOR_PERF.keys())
+    values  = list(SECTOR_PERF.values())
+    colors  = ["#22c55e" if v >= 0 else "#ef4444" for v in values]
+    fig2 = bar_chart(values, sectors, title="", colors=colors, horizontal=True, height=300)
+    fig2.update_traces(texttemplate=[f"{v:+.1f}%" for v in values], textposition="outside")
+    fig2.update_layout(paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(255,255,255,0.85)")
+    st.plotly_chart(fig2, use_container_width=True, config={"displayModeBar": False})
 
     st.markdown("<br>", unsafe_allow_html=True)
 
