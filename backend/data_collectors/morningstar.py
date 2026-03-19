@@ -26,6 +26,35 @@ class MorningstarCollector:
         self.session = requests.Session()
         self.session.headers.update(self.HEADERS)
 
+    @staticmethod
+    def extract_fund_id_from_url(url: str) -> Optional[str]:
+        """
+        Estrae l'ID del fondo da un URL Morningstar
+
+        Args:
+            url: URL Morningstar (es: https://www.morningstar.it/it/funds/snapshot/snapshot.aspx?id=F00000XX1Y)
+
+        Returns:
+            Fund ID se trovato, None altrimenti
+        """
+        # Pattern per URL Morningstar
+        patterns = [
+            r'[?&]id=([A-Z0-9]+)',  # Standard query param
+            r'/snapshot/([A-Z0-9]+)',  # ID nel path
+        ]
+
+        for pattern in patterns:
+            match = re.search(pattern, url, re.IGNORECASE)
+            if match:
+                return match.group(1)
+
+        return None
+
+    @staticmethod
+    def is_morningstar_url(text: str) -> bool:
+        """Verifica se il testo è un URL Morningstar"""
+        return "morningstar" in text.lower() and ("http://" in text or "https://" in text)
+
     def search(self, query: str, asset_type: str = "all") -> List[Dict]:
         """Cerca strumenti su Morningstar"""
         try:
@@ -132,12 +161,12 @@ class MorningstarCollector:
             s["source"] = "Morningstar"
         return seed_data
 
-    def get_historical_prices_by_isin(self, isin: str, years: int = 3) -> Optional[pd.Series]:
+    def get_historical_prices_by_id(self, fund_id: str, years: int = 3) -> Optional[pd.Series]:
         """
-        Ottiene prezzi storici per un fondo tramite ISIN
+        Ottiene prezzi storici per un fondo tramite ID Morningstar diretto
 
         Args:
-            isin: Codice ISIN del fondo (es: IT0005239881)
+            fund_id: ID Morningstar del fondo (es: F00000XX1Y)
             years: Anni di storico da recuperare (default 3)
 
         Returns:
@@ -145,20 +174,9 @@ class MorningstarCollector:
             None se non riesce a recuperare i dati
         """
         try:
-            # Step 1: Cerca il fondo per ISIN
-            search_results = self.search(isin)
-            if not search_results:
-                logger.warning(f"ISIN {isin} non trovato su Morningstar")
-                return None
+            logger.info(f"Recupero dati per fund_id: {fund_id}")
 
-            fund = search_results[0]  # Prendi primo risultato
-            fund_id = fund.get("id")
-            fund_name = fund.get("name", isin)
-
-            logger.info(f"Trovato fondo: {fund_name} (ID: {fund_id})")
-
-            # Step 2: Prova a ottenere dati storici via API chart
-            # Morningstar usa un endpoint chart per i grafici
+            # Prova a ottenere dati storici via chart page
             import datetime
             end_date = datetime.datetime.now()
             start_date = end_date - datetime.timedelta(days=years*365)
@@ -172,7 +190,7 @@ class MorningstarCollector:
             r = self.session.get(chart_url, params=params, timeout=15)
             soup = BeautifulSoup(r.content, "lxml")
 
-            # Step 3: Cerca dati nel JavaScript della pagina
+            # Cerca dati nel JavaScript della pagina
             # Morningstar inietta dati chart in variabili JS
             scripts = soup.find_all("script")
             prices_data = {}
@@ -199,11 +217,43 @@ class MorningstarCollector:
             if prices_data:
                 # Converti in pandas Series e ordina per data
                 series = pd.Series(prices_data).sort_index()
-                logger.info(f"Recuperati {len(series)} punti dati per {fund_name}")
+                logger.info(f"Recuperati {len(series)} punti dati per fund {fund_id}")
                 return series
             else:
-                logger.warning(f"Nessun dato storico trovato per {isin}")
+                logger.warning(f"Nessun dato storico trovato per fund {fund_id}")
                 return None
+
+        except Exception as e:
+            logger.error(f"Errore recupero prezzi per fund {fund_id}: {e}")
+            return None
+
+    def get_historical_prices_by_isin(self, isin: str, years: int = 3) -> Optional[pd.Series]:
+        """
+        Ottiene prezzi storici per un fondo tramite ISIN
+
+        Args:
+            isin: Codice ISIN del fondo (es: IT0005239881)
+            years: Anni di storico da recuperare (default 3)
+
+        Returns:
+            pandas Series con date come index e prezzi come values
+            None se non riesce a recuperare i dati
+        """
+        try:
+            # Step 1: Cerca il fondo per ISIN
+            search_results = self.search(isin)
+            if not search_results:
+                logger.warning(f"ISIN {isin} non trovato su Morningstar")
+                return None
+
+            fund = search_results[0]  # Prendi primo risultato
+            fund_id = fund.get("id")
+            fund_name = fund.get("name", isin)
+
+            logger.info(f"Trovato fondo: {fund_name} (ID: {fund_id})")
+
+            # Step 2: Usa il metodo by_id per ottenere i dati
+            return self.get_historical_prices_by_id(fund_id, years)
 
         except Exception as e:
             logger.error(f"Errore recupero prezzi per ISIN {isin}: {e}")

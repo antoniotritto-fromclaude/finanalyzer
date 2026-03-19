@@ -60,7 +60,44 @@ def load_prices_smart(symbols: List[str], period: str = "3y") -> pd.DataFrame:
     for symbol in symbols:
         logger.info(f"Caricamento prezzi per {symbol}...")
 
-        if is_isin(symbol):
+        # Check 1: È un URL Morningstar?
+        if ms_collector.is_morningstar_url(symbol):
+            logger.info(f"  → Rilevato URL Morningstar")
+            fund_id = ms_collector.extract_fund_id_from_url(symbol)
+
+            if not fund_id:
+                logger.error(f"  ❌ Impossibile estrarre ID da URL: {symbol}")
+                continue
+
+            # Usa fund_id come chiave per cache
+            cache_key = f"MS_{fund_id}"
+
+            # Step 1: Prova cache
+            cached_prices = funds_cache.get_prices(cache_key)
+            if cached_prices is not None and not cached_prices.empty:
+                logger.info(f"  ✅ Caricato da cache ({len(cached_prices)} punti)")
+                prices[symbol] = cached_prices
+                continue
+
+            # Step 2: Scraping Morningstar diretto
+            logger.info(f"  → Scraping Morningstar (ID: {fund_id})...")
+            try:
+                fund_prices = ms_collector.get_historical_prices_by_id(fund_id, years=period_years)
+
+                if fund_prices is not None and not fund_prices.empty:
+                    # Salva in cache con cache_key
+                    funds_cache.set_prices(cache_key, f"Fund_{fund_id}", fund_prices)
+
+                    logger.info(f"  ✅ Caricato da Morningstar ({len(fund_prices)} punti)")
+                    prices[symbol] = fund_prices
+                else:
+                    logger.warning(f"  ❌ Nessun dato trovato per fund_id {fund_id}")
+
+            except Exception as e:
+                logger.error(f"  ❌ Errore Morningstar per fund_id {fund_id}: {e}")
+
+        # Check 2: È un ISIN?
+        elif is_isin(symbol):
             # ═══ FONDO CON ISIN → Usa Morningstar ═══
             logger.info(f"  → Rilevato ISIN: {symbol}")
 
