@@ -17,14 +17,38 @@ class MorningstarCollector:
     API_BASE  = "https://api.morningstar.com/v2"
 
     HEADERS = {
-        "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-        "Accept": "application/json, text/html",
-        "Accept-Language": "it-IT,it;q=0.9",
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+        "Accept-Language": "it-IT,it;q=0.9,en-US;q=0.8",
+        "Accept-Encoding": "gzip, deflate",
+        "DNT": "1",
+        "Connection": "keep-alive",
     }
 
     def __init__(self):
         self.session = requests.Session()
         self.session.headers.update(self.HEADERS)
+        self._last_request_time = 0
+        self._min_delay = 2.0  # 2 secondi minimo tra richieste
+        self._request_count = 0
+        self._max_requests_per_minute = 20  # Massimo 20 richieste al minuto
+
+    def _rate_limit(self):
+        """Rate limiting intelligente per evitare ban"""
+        import time
+        elapsed = time.time() - self._last_request_time
+        if elapsed < self._min_delay:
+            wait_time = self._min_delay - elapsed
+            logger.debug(f"[Morningstar] Rate limiting: waiting {wait_time:.2f}s")
+            time.sleep(wait_time)
+
+        self._request_count += 1
+        if self._request_count >= self._max_requests_per_minute:
+            logger.info("[Morningstar] Reached request limit, waiting 60s...")
+            time.sleep(60)
+            self._request_count = 0
+
+        self._last_request_time = time.time()
 
     @staticmethod
     def extract_fund_id_from_url(url: str) -> Optional[str]:
@@ -67,13 +91,15 @@ class MorningstarCollector:
         """Verifica se il testo è un URL Morningstar"""
         return "morningstar" in text.lower() and ("http://" in text or "https://" in text)
 
-    def search(self, query: str, asset_type: str = "all") -> List[Dict]:
+    def search(self, query: str, asset_type: str = "all", max_results: int = 20) -> List[Dict]:
         """Cerca strumenti su Morningstar"""
+        self._rate_limit()  # Rate limiting
+
         try:
             url = "https://www.morningstar.it/it/util/SecuritySearch.ashx"
             params = {
                 "q": query,
-                "limit": 20,
+                "limit": max_results,
                 "ifIncludeAds": False,
                 "src": "Nav",
                 "version": 2,
@@ -94,13 +120,16 @@ class MorningstarCollector:
                         "isin":      item.get("isin", ""),
                         "source":    "Morningstar",
                     })
+                logger.info(f"[Morningstar] Search '{query}': {len(results)} results")
                 return results
         except Exception as e:
-            logger.warning(f"Morningstar search error: {e}")
+            logger.warning(f"[Morningstar] Search error: {e}")
         return []
 
     def get_fund_details(self, morningstar_id: str) -> Dict:
         """Ottiene dettagli fondo"""
+        self._rate_limit()  # Rate limiting
+
         try:
             url = f"https://www.morningstar.it/it/funds/snapshot/snapshot.aspx"
             params = {"id": morningstar_id}
@@ -123,9 +152,10 @@ class MorningstarCollector:
                     val = cells[1].get_text(strip=True)
                     details[key] = val
 
+            logger.info(f"[Morningstar] ✅ Details for {morningstar_id}")
             return details
         except Exception as e:
-            logger.error(f"Morningstar fund detail error: {e}")
+            logger.error(f"[Morningstar] Fund detail error: {e}")
             return {}
 
     def get_top_funds_italy(self) -> List[Dict]:
@@ -176,6 +206,7 @@ class MorningstarCollector:
     def get_historical_prices_by_id(self, fund_id: str, years: int = 3) -> Optional[pd.Series]:
         """
         Ottiene prezzi storici per un fondo tramite ID Morningstar diretto
+        NUOVA STRATEGIA: Prova MULTIPLI endpoint e metodi
 
         Args:
             fund_id: ID Morningstar del fondo (es: F00000XX1Y)
@@ -185,59 +216,115 @@ class MorningstarCollector:
             pandas Series con date come index e prezzi come values
             None se non riesce a recuperare i dati
         """
+        self._rate_limit()  # Rate limiting PRIMA della richiesta
+
+        logger.info(f"[Morningstar] Fetching fund_id: {fund_id}")
+
+        # ═══ STRATEGIA 1: API JSON diretta (se disponibile) ═══
         try:
-            logger.info(f"Recupero dati per fund_id: {fund_id}")
+            api_urls = [
+                f"https://lt.morningstar.com/api/rest.svc/timeseries_price/9vehuxllxs?currencyId=EUR&frequency=daily&performanceId={fund_id}",
+                f"https://www.morningstar.it/api/fund/{fund_id}/timeseries",
+                f"https://api.morningstar.com/v2/fund/{fund_id}/history",
+            ]
 
-            # Prova a ottenere dati storici via chart page
-            import datetime
-            end_date = datetime.datetime.now()
-            start_date = end_date - datetime.timedelta(days=years*365)
+            for api_url in api_urls:
+                try:
+                    r = self.session.get(api_url, timeout=15)
+                    if r.status_code == 200:
+                        data = r.json()
+                        prices = {}
 
-            chart_url = f"https://www.morningstar.it/it/funds/snapshot/snapshot.aspx"
-            params = {
-                "id": fund_id,
-                "tab": "chart",
-            }
+                        # Pattern diversi di risposta
+                        if isinstance(data, list):
+                            for point in data:
+                                if 'date' in point and 'value' in point:
+                                    date = pd.to_datetime(point['date'])
+                                    prices[date] = float(point['value'])
 
-            r = self.session.get(chart_url, params=params, timeout=15)
+                        elif isinstance(data, dict):
+                            # Pattern: {dates: [...], values: [...]}
+                            dates = data.get('dates', data.get('labels', []))
+                            values = data.get('values', data.get('prices', []))
+                            if dates and values:
+                                for d, v in zip(dates, values):
+                                    prices[pd.to_datetime(d)] = float(v)
+
+                        if prices:
+                            series = pd.Series(prices).sort_index()
+                            logger.info(f"[Morningstar] ✅ API: {len(series)} points")
+                            return series
+
+                except Exception:
+                    continue
+
+        except Exception as e:
+            logger.debug(f"[Morningstar] API strategies failed: {e}")
+
+        # ═══ STRATEGIA 2: Scraping HTML tabella (NO JavaScript) ═══
+        try:
+            # Prova pagina performance/rendimenti
+            perf_url = f"https://www.morningstar.it/it/funds/snapshot/snapshot.aspx"
+            params = {"id": fund_id, "tab": "performance"}
+
+            r = self.session.get(perf_url, params=params, timeout=15)
             soup = BeautifulSoup(r.content, "lxml")
 
-            # Cerca dati nel JavaScript della pagina
-            # Morningstar inietta dati chart in variabili JS
-            scripts = soup.find_all("script")
             prices_data = {}
 
-            for script in scripts:
-                if script.string and "chartData" in script.string:
-                    # Estrai dati JSON dal JavaScript
-                    import json
-                    match = re.search(r'chartData\s*=\s*(\[.*?\]);', script.string, re.DOTALL)
-                    if match:
+            # Cerca tabelle NAV
+            for table in soup.select("table.snapshotTextColor, table.returns, table.performance"):
+                rows = table.select("tbody tr, tr")
+                for row in rows:
+                    cols = row.find_all("td")
+                    if len(cols) >= 2:
                         try:
-                            data = json.loads(match.group(1))
-                            # Converti in formato {data: prezzo}
-                            for point in data:
-                                if len(point) >= 2:
-                                    # point[0] è timestamp, point[1] è prezzo
-                                    date = pd.to_datetime(point[0], unit='ms')
-                                    price = float(point[1])
-                                    prices_data[date] = price
-                        except Exception as e:
-                            logger.debug(f"JSON parse error: {e}")
+                            # Prova a estrarre data e prezzo
+                            date_str = cols[0].get_text(strip=True)
+                            price_str = cols[1].get_text(strip=True).replace(",", ".").replace(" ", "")
+
+                            date = pd.to_datetime(date_str, errors="coerce")
+                            price = float(price_str)
+
+                            if pd.notna(date):
+                                prices_data[date] = price
+                        except:
                             continue
 
             if prices_data:
-                # Converti in pandas Series e ordina per data
                 series = pd.Series(prices_data).sort_index()
-                logger.info(f"Recuperati {len(series)} punti dati per fund {fund_id}")
+                logger.info(f"[Morningstar] ✅ HTML table: {len(series)} points")
                 return series
-            else:
-                logger.warning(f"Nessun dato storico trovato per fund {fund_id}")
-                return None
 
         except Exception as e:
-            logger.error(f"Errore recupero prezzi per fund {fund_id}: {e}")
-            return None
+            logger.debug(f"[Morningstar] HTML scraping failed: {e}")
+
+        # ═══ STRATEGIA 3: Estrai NAV corrente almeno ═══
+        try:
+            # Almeno ottieni il NAV corrente per permettere validazione
+            snapshot_url = f"https://www.morningstar.it/it/funds/snapshot/snapshot.aspx"
+            params = {"id": fund_id}
+
+            r = self.session.get(snapshot_url, params=params, timeout=15)
+            soup = BeautifulSoup(r.content, "lxml")
+
+            # Cerca NAV in vari posti
+            nav_elem = soup.find(text=re.compile(r'NAV|Valore quota|VL', re.I))
+            if nav_elem and nav_elem.find_parent():
+                nav_text = nav_elem.find_parent().get_text()
+                nav_match = re.search(r'([\d,\.]+)', nav_text)
+                if nav_match:
+                    nav = float(nav_match.group(1).replace(',', '.'))
+                    # Restituisci serie con solo dato corrente
+                    series = pd.Series({pd.Timestamp.now(): nav})
+                    logger.info(f"[Morningstar] ⚠️  Only current NAV: {nav}")
+                    return series
+
+        except Exception as e:
+            logger.debug(f"[Morningstar] Current NAV fetch failed: {e}")
+
+        logger.warning(f"[Morningstar] ❌ All strategies failed for {fund_id}")
+        return None
 
     def get_historical_prices_by_isin(self, isin: str, years: int = 3) -> Optional[pd.Series]:
         """

@@ -1,67 +1,289 @@
 """
-Quantalys Data Collector
-Raccoglie dati fondi da www.quantalys.it
+Quantalys Data Collector - ENHANCED VERSION
+Raccoglie dati fondi da www.quantalys.it con rate limiting intelligente
 """
 import requests
 from bs4 import BeautifulSoup
-from typing import List, Dict
+import pandas as pd
+from typing import List, Dict, Optional
 import logging
+import re
+import time
+from datetime import datetime
 
 logger = logging.getLogger(__name__)
 
 class QuantalysCollector:
-    BASE_URL  = "https://www.quantalys.it"
+    BASE_URL = "https://www.quantalys.it"
     SEARCH_URL = "https://www.quantalys.it/Fonds/Recherche"
 
     HEADERS = {
-        "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-        "Accept-Language": "it-IT,it;q=0.9",
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+        "Accept-Language": "it-IT,it;q=0.9,en-US;q=0.8",
         "Referer": "https://www.quantalys.it/",
+        "DNT": "1",
+        "Connection": "keep-alive",
     }
 
     def __init__(self):
         self.session = requests.Session()
         self.session.headers.update(self.HEADERS)
+        self._last_request_time = 0
+        self._min_delay = 2.0  # Minimo 2 secondi tra richieste per evitare ban
 
-    def search_fund(self, query: str) -> List[Dict]:
-        """Cerca un fondo su Quantalys"""
+    def _rate_limit(self):
+        """Rate limiting intelligente - previene blocchi"""
+        elapsed = time.time() - self._last_request_time
+        if elapsed < self._min_delay:
+            wait_time = self._min_delay - elapsed
+            logger.debug(f"[Quantalys] Rate limiting: waiting {wait_time:.2f}s")
+            time.sleep(wait_time)
+        self._last_request_time = time.time()
+
+    @staticmethod
+    def is_quantalys_url(text: str) -> bool:
+        """Verifica se è un URL Quantalys"""
+        return "quantalys" in text.lower() and ("http" in text.lower())
+
+    @staticmethod
+    def extract_fund_id_from_url(url: str) -> Optional[str]:
+        """
+        Estrae ID fondo da URL Quantalys
+        Es: https://www.quantalys.it/fonds/106139 → 106139
+        """
+        match = re.search(r'/fonds/(\d+)', url, re.IGNORECASE)
+        if match:
+            return match.group(1)
+        return None
+
+    def search_fund(self, query: str, max_results: int = 20) -> List[Dict]:
+        """
+        Cerca un fondo su Quantalys (ISIN, nome, ticker)
+
+        Args:
+            query: Testo di ricerca
+            max_results: Numero massimo risultati
+
+        Returns:
+            Lista di fondi trovati
+        """
+        self._rate_limit()
+
+        results = []
+
+        # Strategia 1: Prova API JSON (se disponibile)
         try:
-            params = {"q": query, "langue": "IT"}
+            params = {"q": query, "langue": "IT", "limit": max_results}
             r = self.session.get(f"{self.BASE_URL}/api/search", params=params, timeout=10)
             if r.status_code == 200:
                 data = r.json()
-                results = []
                 for item in data:
                     results.append({
-                        "name":     item.get("nom", ""),
-                        "isin":     item.get("isin", ""),
+                        "name": item.get("nom", ""),
+                        "isin": item.get("isin", ""),
                         "category": item.get("categorie", ""),
-                        "risk":     item.get("risque", ""),
-                        "rating":   item.get("notation", ""),
-                        "source":   "Quantalys",
+                        "risk": item.get("risque", ""),
+                        "rating": item.get("notation", ""),
+                        "source": "Quantalys",
                     })
-                return results
+                logger.info(f"[Quantalys] API search: {len(results)} results")
+                return results[:max_results]
         except Exception as e:
-            logger.debug(f"Quantalys API: {e}")
+            logger.debug(f"[Quantalys] API search failed: {e}")
 
-        # Fallback scraping
+        # Strategia 2: Scraping HTML
         try:
-            r = self.session.get(f"{self.BASE_URL}/Fonds/Recherche", params={"q": query}, timeout=10)
+            r = self.session.get(self.SEARCH_URL, params={"q": query}, timeout=10)
             soup = BeautifulSoup(r.content, "lxml")
-            results = []
-            for row in soup.select("table.fonds tbody tr")[:20]:
+
+            # Pattern comuni per risultati tabella
+            for row in soup.select("table.fonds tbody tr, table.funds tbody tr, .fund-row, .result-row")[:max_results]:
                 cols = row.find_all("td")
-                if len(cols) >= 3:
-                    results.append({
-                        "name":     cols[0].get_text(strip=True),
-                        "isin":     cols[1].get_text(strip=True),
-                        "category": cols[2].get_text(strip=True),
-                        "source":   "Quantalys",
-                    })
+                if len(cols) >= 2:
+                    fund = {
+                        "name": cols[0].get_text(strip=True),
+                        "isin": "",
+                        "source": "Quantalys",
+                    }
+                    # Cerca ISIN nei campi
+                    for col in cols:
+                        text = col.get_text(strip=True)
+                        isin_match = re.search(r'([A-Z]{2}[A-Z0-9]{10})', text)
+                        if isin_match:
+                            fund["isin"] = isin_match.group(1)
+                            break
+
+                    if len(cols) >= 3:
+                        fund["category"] = cols[2].get_text(strip=True)
+
+                    results.append(fund)
+
+            logger.info(f"[Quantalys] HTML scraping: {len(results)} results")
             return results
+
         except Exception as e:
-            logger.error(f"Quantalys scraping error: {e}")
+            logger.error(f"[Quantalys] Scraping error: {e}")
             return []
+
+    def get_fund_data(self, fund_id_or_url: str) -> Optional[Dict]:
+        """
+        Raccoglie dati completi di un fondo
+
+        Args:
+            fund_id_or_url: ID Quantalys (es: "106139") o URL completo
+
+        Returns:
+            Dict con dati fondo o None
+        """
+        self._rate_limit()
+
+        # Determina fund_id
+        if self.is_quantalys_url(fund_id_or_url):
+            fund_id = self.extract_fund_id_from_url(fund_id_or_url)
+            url = fund_id_or_url
+        else:
+            fund_id = fund_id_or_url
+            url = f"{self.BASE_URL}/fonds/{fund_id}"
+
+        if not fund_id:
+            logger.error(f"[Quantalys] Invalid fund ID/URL: {fund_id_or_url}")
+            return None
+
+        logger.info(f"[Quantalys] Fetching fund {fund_id}...")
+
+        try:
+            response = self.session.get(url, timeout=15)
+            response.raise_for_status()
+
+            soup = BeautifulSoup(response.content, 'lxml')
+
+            fund_data = {
+                'id': fund_id,
+                'source': 'Quantalys',
+                'url': url
+            }
+
+            # Estrai nome fondo
+            for selector in ['h1.fund-name', 'h1.titre', 'h1', '.fund-title']:
+                title = soup.select_one(selector)
+                if title:
+                    fund_data['name'] = title.get_text(strip=True)
+                    break
+
+            # Estrai ISIN
+            isin_elem = soup.find(text=re.compile(r'ISIN', re.I))
+            if isin_elem:
+                isin_text = isin_elem.find_parent().get_text() if isin_elem.find_parent() else ""
+                isin_match = re.search(r'([A-Z]{2}[A-Z0-9]{10})', isin_text)
+                if isin_match:
+                    fund_data['isin'] = isin_match.group(1)
+
+            # Estrai NAV
+            nav_elem = soup.find(text=re.compile(r'Valore quota|VL|NAV|Cours', re.I))
+            if nav_elem:
+                nav_text = nav_elem.find_parent().get_text() if nav_elem.find_parent() else ""
+                nav_match = re.search(r'([\d\s,\.]+)', nav_text)
+                if nav_match:
+                    nav_str = nav_match.group(1).replace(' ', '').replace(',', '.')
+                    try:
+                        fund_data['nav'] = float(nav_str)
+                    except:
+                        pass
+
+            # Estrai categoria
+            cat_elem = soup.find(text=re.compile(r'Categoria|Catégorie|Classification', re.I))
+            if cat_elem and cat_elem.find_parent():
+                fund_data['category'] = cat_elem.find_parent().get_text(strip=True).split(':')[-1].strip()
+
+            # Estrai rating
+            rating_elem = soup.find('span', class_=re.compile(r'star|rating|notation', re.I))
+            if rating_elem:
+                rating_text = rating_elem.get_text()
+                rating_match = re.search(r'(\d)', rating_text)
+                if rating_match:
+                    fund_data['rating'] = int(rating_match.group(1))
+
+            # Estrai TER
+            ter_elem = soup.find(text=re.compile(r'TER|Frais|Costi|Spese', re.I))
+            if ter_elem and ter_elem.find_parent():
+                ter_text = ter_elem.find_parent().get_text()
+                ter_match = re.search(r'([\d,\.]+)\s*%', ter_text)
+                if ter_match:
+                    ter_str = ter_match.group(1).replace(',', '.')
+                    try:
+                        fund_data['ter'] = float(ter_str)
+                    except:
+                        pass
+
+            logger.info(f"[Quantalys] ✅ {fund_data.get('name', fund_id)}")
+            return fund_data
+
+        except Exception as e:
+            logger.error(f"[Quantalys] Error fetching {fund_id}: {e}")
+            return None
+
+    def get_historical_prices(self, fund_id: str, years: int = 3) -> Optional[pd.Series]:
+        """
+        Ottiene serie storica prezzi (se disponibile)
+
+        Args:
+            fund_id: ID Quantalys
+            years: Anni di storico
+
+        Returns:
+            pandas Series con date e NAV
+        """
+        self._rate_limit()
+
+        # Possibili endpoint per dati storici
+        api_endpoints = [
+            f"{self.BASE_URL}/api/fund/{fund_id}/history",
+            f"{self.BASE_URL}/data/chart/{fund_id}",
+            f"{self.BASE_URL}/fonds/{fund_id}/performances",
+            f"{self.BASE_URL}/fonds/{fund_id}/chart-data"
+        ]
+
+        for api_url in api_endpoints:
+            try:
+                response = self.session.get(api_url, timeout=15)
+                if response.status_code == 200:
+                    # Prova JSON
+                    try:
+                        data = response.json()
+                        prices = {}
+
+                        # Pattern 1: Lista di {date, value}
+                        if isinstance(data, list):
+                            for point in data:
+                                if 'date' in point and ('value' in point or 'nav' in point or 'price' in point):
+                                    date = pd.to_datetime(point['date'])
+                                    value = point.get('value') or point.get('nav') or point.get('price')
+                                    prices[date] = float(value)
+
+                        # Pattern 2: Dict con array separati
+                        elif isinstance(data, dict):
+                            dates = data.get('dates', data.get('labels', []))
+                            values = data.get('values', data.get('prices', data.get('nav', [])))
+
+                            if dates and values and len(dates) == len(values):
+                                for d, v in zip(dates, values):
+                                    date = pd.to_datetime(d)
+                                    prices[date] = float(v)
+
+                        if prices:
+                            series = pd.Series(prices).sort_index()
+                            logger.info(f"[Quantalys] ✅ {len(series)} historical points")
+                            return series
+
+                    except ValueError:
+                        pass  # Non è JSON
+
+            except Exception as e:
+                logger.debug(f"[Quantalys] Endpoint {api_url} failed: {e}")
+
+        logger.warning(f"[Quantalys] No historical data for {fund_id}")
+        return None
 
     def get_best_funds_by_category(self) -> Dict[str, List[Dict]]:
         """Migliori fondi per categoria (dati curati)"""
@@ -85,3 +307,7 @@ class QuantalysCollector:
                 {"name":"Carmignac Patrimoine A EUR Acc","isin":"FR0010135103","rating":3,"ter":1.50,"1y":3.1,"3y":1.4,"5y":3.2,"risk":3,"source":"Quantalys"},
             ],
         }
+
+
+# Singleton instance
+quantalys_collector = QuantalysCollector()
