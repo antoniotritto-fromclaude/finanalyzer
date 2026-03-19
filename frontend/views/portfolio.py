@@ -35,14 +35,17 @@ def render():
 
     st.markdown("""
     <div class="fin-card" style="background:#f0fdf4;border-left:4px solid #22c55e;padding:16px;">
-        <b>✅ Portafoglio Multi-Asset:</b> Puoi aggiungere qualsiasi asset:
+        <b>✅ Portafoglio Multi-Asset:</b> Aggiungi asset con ticker Yahoo Finance:
         <ul style="margin:4px 0 0 0;padding-left:20px;">
-            <li><b>📈 Azioni</b>: AAPL, ENI.MI, MSFT, etc.</li>
-            <li><b>📡 ETF</b>: SWDA.MI, SPY, VWCE.DE, etc.</li>
-            <li><b>🌾 Commodities</b>: GC=F (Gold), CL=F (Petrolio), etc.</li>
-            <li><b>💰 Crypto</b>: BTC-USD, ETH-USD, etc.</li>
+            <li><b>📈 Azioni</b>: AAPL, ENI.MI, MSFT, GOOGL, etc.</li>
+            <li><b>📡 ETF</b>: SWDA.MI, SPY, VWCE.DE, QQQ, etc.</li>
+            <li><b>🌾 Commodities</b>: GC=F (Gold), CL=F (Petrolio), NG=F (Gas), etc.</li>
+            <li><b>💰 Crypto</b>: BTC-USD, ETH-USD, SOL-USD, etc.</li>
         </ul>
-        💡 <b>Tip:</b> Usa lo <b>Screener</b> per aggiungere rapidamente titoli da liste predef inite!
+        <div style="margin-top:10px;padding:8px;background:#fef3c7;border-radius:6px;font-size:0.85rem;">
+            ⚠️ <b>Non supportati:</b> Fondi comuni con ISIN - usa ETF equivalenti!<br>
+            💡 <b>Tip:</b> Usa lo <b>Screener</b> per selezione rapida da liste predefinite
+        </div>
     </div>
     """, unsafe_allow_html=True)
 
@@ -154,7 +157,18 @@ def render():
             prices_df = _load_prices(symbols, period=period_sel)
 
         if prices_df.empty:
-            st.error("❌ Impossibile caricare i prezzi. Verifica i simboli e la connessione.")
+            st.error("❌ Impossibile caricare i prezzi per questi simboli.")
+            st.warning("""
+            **Possibili cause:**
+            - Simboli non validi su Yahoo Finance
+            - ISIN fondi comuni non supportati (es: IT0005239881)
+            - Problemi di connessione
+
+            **Soluzioni:**
+            - Usa ticker standard (AAPL, SPY, ENI.MI)
+            - Sostituisci fondi con ETF equivalenti
+            - Verifica simboli su [Yahoo Finance](https://finance.yahoo.com)
+            """)
             return
 
         st.session_state["pf_prices_loaded"] = True

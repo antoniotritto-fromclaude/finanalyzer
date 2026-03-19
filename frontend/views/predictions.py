@@ -65,7 +65,14 @@ def render():
             prices_df = _load_prices(symbols, period="3y")
 
         if prices_df.empty:
-            st.error("❌ Dati non disponibili.")
+            st.error("❌ Dati storici non disponibili per questi simboli.")
+            st.warning("""
+            **Possibili cause:**
+            - Simboli non validi su Yahoo Finance (ISIN fondi non supportati)
+            - Dati storici insufficienti per simulazioni
+
+            **Soluzione:** Usa solo ticker standard (Azioni, ETF, Commodities, Crypto)
+            """)
             return
 
         # Pesi pulizia

@@ -17,11 +17,13 @@ AZIONI_POPOLARI = {
 }
 
 ETF_POPOLARI = {
-    "🌍 Globali": ["SWDA.MI", "VWCE.DE", "CSPX.MI", "VUSA.L", "IWDA.AS"],
-    "🇺🇸 USA": ["SPY", "QQQ", "VOO", "VTI", "IVV"],
-    "🇪🇺 Europa": ["EXS1.DE", "IQQE.DE", "MEUD.DE"],
-    "🏛️ Obbligazionari": ["VGEA.L", "IEAG.L", "AGGH.MI"],
-    "📊 Tematici": ["ECAR.MI", "IUIT.MI", "HEAL.L", "RBOT.L"],
+    "🌍 Globali Azionari": ["SWDA.MI", "VWCE.DE", "CSPX.MI", "VUSA.L", "IWDA.AS", "EUNL.DE", "VHYL.L"],
+    "🇺🇸 USA": ["SPY", "QQQ", "VOO", "VTI", "IVV", "DIA", "IWM"],
+    "🇪🇺 Europa": ["EXS1.DE", "IQQE.DE", "MEUD.DE", "IUSE.L", "SMEA.L"],
+    "🌏 Emergenti": ["EIMI.MI", "AEEM.MI", "IEMG", "VWO", "EEM"],
+    "🏛️ Obbligazionari": ["VGEA.L", "IEAG.L", "AGGH.MI", "AGG", "BND", "GOVT"],
+    "💎 Commodities ETF": ["GLD", "SLV", "USO", "DBA", "PDBC"],
+    "📊 Tematici": ["ECAR.MI", "IUIT.MI", "HEAL.L", "RBOT.L", "ARKK", "ICLN"],
 }
 
 COMMODITIES = {
@@ -65,10 +67,14 @@ def render():
         <b>💡 Come funziona:</b>
         <ol style="margin:8px 0 0 0;padding-left:20px;">
             <li>Cerca un simbolo manualmente OPPURE</li>
-            <li>Seleziona da liste predefinite (Azioni, ETF, Commodities)</li>
+            <li>Seleziona da liste predefinite (Azioni, ETF, Commodities, Crypto)</li>
             <li>Clicca "➕ Aggiungi" per inserire nel portafoglio</li>
             <li>Vai su <b>Portafoglio</b> per gestire e ottimizzare</li>
         </ol>
+        <div style="margin-top:12px;padding:10px;background:#fef3c7;border-radius:8px;font-size:0.88rem;">
+            ⚠️ <b>Importante:</b> Supportati solo asset con ticker Yahoo Finance (Azioni, ETF, Commodities, Crypto).
+            <br>❌ <b>Non supportati:</b> Fondi comuni con ISIN (es: IT0005239881) - usa ETF equivalenti invece!
+        </div>
     </div>
     """, unsafe_allow_html=True)
 
