@@ -10,6 +10,8 @@ from typing import List, Dict
 import logging
 
 from backend.data_collectors.morningstar import MorningstarCollector
+from backend.data_collectors.justetf import justetf_collector
+from backend.data_collectors.investing import investing_collector
 from backend.cache.funds_cache import funds_cache
 
 logger = logging.getLogger(__name__)
@@ -28,10 +30,16 @@ def is_isin(symbol: str) -> bool:
 
 def load_prices_smart(symbols: List[str], period: str = "3y") -> pd.DataFrame:
     """
-    Carica prezzi storici da Yahoo Finance O Morningstar
+    Carica prezzi storici da multiple fonti: Yahoo Finance, Morningstar, JustETF, Investing.com
+
+    Routing automatico:
+        - URL Investing.com → Investing.com
+        - URL Morningstar → Morningstar
+        - ISIN codes → Morningstar (priorità) o JustETF (fallback)
+        - Tickers → Yahoo Finance
 
     Args:
-        symbols: Lista di simboli (ticker o ISIN)
+        symbols: Lista di simboli (ticker, ISIN, URLs)
         period: Periodo storico ("1y", "3y", "5y", "max")
 
     Returns:
@@ -39,10 +47,10 @@ def load_prices_smart(symbols: List[str], period: str = "3y") -> pd.DataFrame:
         Colonne mancanti se simbolo non trovato
 
     Example:
-        >>> symbols = ["AAPL", "IT0005239881", "SPY"]
+        >>> symbols = ["AAPL", "IT0005239881", "https://investing.com/equities/apple"]
         >>> df = load_prices_smart(symbols, period="3y")
         >>> print(df.columns)
-        Index(['AAPL', 'IT0005239881', 'SPY'])
+        Index(['AAPL', 'IT0005239881', 'https://investing.com/equities/apple'])
     """
     prices = {}
     ms_collector = MorningstarCollector()
@@ -60,8 +68,44 @@ def load_prices_smart(symbols: List[str], period: str = "3y") -> pd.DataFrame:
     for symbol in symbols:
         logger.info(f"Caricamento prezzi per {symbol}...")
 
-        # Check 1: È un URL Morningstar?
-        if ms_collector.is_morningstar_url(symbol):
+        # Check 1: È un URL Investing.com?
+        if investing_collector.is_investing_url(symbol):
+            logger.info(f"  → Rilevato URL Investing.com: {symbol}")
+            instrument_path = investing_collector.extract_instrument_from_url(symbol)
+
+            if not instrument_path:
+                logger.error(f"  ❌ Impossibile estrarre strumento da URL: {symbol}")
+                continue
+
+            cache_key = f"INV_{instrument_path.replace('/', '_')}"
+
+            # Step 1: Prova cache
+            cached_prices = funds_cache.get_prices(cache_key)
+            if cached_prices is not None and not cached_prices.empty:
+                logger.info(f"  ✅ Caricato da cache ({len(cached_prices)} punti)")
+                prices[symbol] = cached_prices
+                funds_cache.add_recent(cache_key, instrument_path, "Investing.com")
+                continue
+
+            # Step 2: Scraping Investing.com
+            logger.info(f"  → Scraping Investing.com ({instrument_path})...")
+            try:
+                inv_prices = investing_collector.get_historical_prices(instrument_path, years=period_years)
+
+                if inv_prices is not None and not inv_prices.empty:
+                    funds_cache.set_prices(cache_key, instrument_path, inv_prices)
+                    funds_cache.add_recent(cache_key, instrument_path, "Investing.com")
+
+                    logger.info(f"  ✅ Caricato da Investing.com ({len(inv_prices)} punti)")
+                    prices[symbol] = inv_prices
+                else:
+                    logger.warning(f"  ❌ Nessun dato trovato per {instrument_path}")
+
+            except Exception as e:
+                logger.error(f"  ❌ Errore Investing.com: {e}")
+
+        # Check 2: È un URL Morningstar?
+        elif ms_collector.is_morningstar_url(symbol):
             logger.info(f"  → Rilevato URL Morningstar: {symbol}")
             fund_id = ms_collector.extract_fund_id_from_url(symbol)
 
@@ -103,9 +147,9 @@ def load_prices_smart(symbols: List[str], period: str = "3y") -> pd.DataFrame:
             except Exception as e:
                 logger.error(f"  ❌ Errore Morningstar per fund_id {fund_id}: {e}")
 
-        # Check 2: È un ISIN?
+        # Check 3: È un ISIN?
         elif is_isin(symbol):
-            # ═══ FONDO CON ISIN → Usa Morningstar ═══
+            # ═══ FONDO/ETF CON ISIN → Usa Morningstar O JustETF ═══
             logger.info(f"  → Rilevato ISIN: {symbol}")
 
             # Step 1: Prova cache
@@ -114,32 +158,43 @@ def load_prices_smart(symbols: List[str], period: str = "3y") -> pd.DataFrame:
                 logger.info(f"  ✅ Caricato da cache ({len(cached_prices)} punti)")
                 prices[symbol] = cached_prices
                 # Aggiorna timestamp nei recenti (lo sposta in cima)
-                funds_cache.add_recent(symbol, symbol, "Morningstar")
+                funds_cache.add_recent(symbol, symbol, "Cache")
                 continue
 
-            # Step 2: Scraping Morningstar
-            logger.info(f"  → Scraping Morningstar...")
+            # Step 2: Prova Morningstar
+            logger.info(f"  → Tentativo #1: Morningstar...")
+            fund_prices = None
+            source_used = None
+
             try:
                 fund_prices = ms_collector.get_historical_prices_by_isin(symbol, years=period_years)
-
                 if fund_prices is not None and not fund_prices.empty:
-                    # Salva in cache
-                    fund_name = symbol  # Usa ISIN come nome se non trovato
-                    funds_cache.set_prices(symbol, fund_name, fund_prices)
-
-                    # Aggiungi a recenti
-                    funds_cache.add_recent(symbol, fund_name, "Morningstar")
-
-                    logger.info(f"  ✅ Caricato da Morningstar ({len(fund_prices)} punti)")
-                    prices[symbol] = fund_prices
-                else:
-                    logger.warning(f"  ❌ Nessun dato trovato per ISIN {symbol}")
-
+                    source_used = "Morningstar"
+                    logger.info(f"  ✅ Trovato su Morningstar ({len(fund_prices)} punti)")
             except Exception as e:
-                logger.error(f"  ❌ Errore Morningstar per {symbol}: {e}")
+                logger.debug(f"  Morningstar fallito: {e}")
+
+            # Step 3: Se Morningstar fallisce, prova JustETF
+            if fund_prices is None or fund_prices.empty:
+                logger.info(f"  → Tentativo #2: JustETF...")
+                try:
+                    fund_prices = justetf_collector.get_historical_prices_by_isin(symbol, years=period_years)
+                    if fund_prices is not None and not fund_prices.empty:
+                        source_used = "JustETF"
+                        logger.info(f"  ✅ Trovato su JustETF ({len(fund_prices)} punti)")
+                except Exception as e:
+                    logger.debug(f"  JustETF fallito: {e}")
+
+            # Step 4: Salva se trovato
+            if fund_prices is not None and not fund_prices.empty:
+                funds_cache.set_prices(symbol, symbol, fund_prices)
+                funds_cache.add_recent(symbol, symbol, source_used)
+                prices[symbol] = fund_prices
+            else:
+                logger.warning(f"  ❌ ISIN {symbol} non trovato su Morningstar né JustETF")
 
         else:
-            # ═══ TICKER STANDARD → Usa Yahoo Finance ═══
+            # Check 4: TICKER STANDARD → Usa Yahoo Finance
             logger.info(f"  → Rilevato ticker: {symbol}")
 
             try:

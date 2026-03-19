@@ -114,3 +114,86 @@ class JustETFCollector:
             e["source"] = "JustETF"
             e["rank"] = i + 1
         return popular
+
+    def get_historical_prices_by_isin(self, isin: str, years: int = 3) -> Optional[pd.Series]:
+        """
+        Ottiene prezzi storici ETF da JustETF tramite ISIN
+
+        Args:
+            isin: Codice ISIN dell'ETF
+            years: Anni di storico (default 3)
+
+        Returns:
+            pandas Series con prezzi storici o None
+        """
+        try:
+            # Step 1: Cerca ETF per ISIN
+            etfs = self.search_etf(isin)
+            if not etfs:
+                logger.warning(f"ETF {isin} non trovato su JustETF")
+                return None
+
+            etf = etfs[0]
+            etf_name = etf.get("name", isin)
+            logger.info(f"Trovato ETF su JustETF: {etf_name}")
+
+            # Step 2: Prova a caricare pagina dettaglio
+            # JustETF URLs: /it/etf-profile.html?isin=XXX
+            detail_url = f"{self.BASE_URL}/it/etf-profile.html?isin={isin}"
+
+            r = self.session.get(detail_url, timeout=15)
+            soup = BeautifulSoup(r.content, "lxml")
+
+            # Step 3: Cerca dati chart nel JavaScript
+            scripts = soup.find_all("script")
+            prices_data = {}
+
+            for script in scripts:
+                if script.string and ("chartData" in script.string or "priceData" in script.string):
+                    # Cerca pattern JSON con dati chart
+                    import json
+                    patterns = [
+                        r'chartData\s*[:=]\s*(\[.*?\])',
+                        r'priceData\s*[:=]\s*(\[.*?\])',
+                        r'historicalData\s*[:=]\s*(\[.*?\])',
+                    ]
+
+                    for pattern in patterns:
+                        match = re.search(pattern, script.string, re.DOTALL)
+                        if match:
+                            try:
+                                data = json.loads(match.group(1))
+                                for point in data:
+                                    # Formato: [timestamp, price] o {date: ..., value: ...}
+                                    if isinstance(point, list) and len(point) >= 2:
+                                        date = pd.to_datetime(point[0], unit='ms')
+                                        price = float(point[1])
+                                        prices_data[date] = price
+                                    elif isinstance(point, dict):
+                                        if "date" in point and "value" in point:
+                                            date = pd.to_datetime(point["date"])
+                                            price = float(point["value"])
+                                            prices_data[date] = price
+                                        elif "x" in point and "y" in point:  # Chart.js format
+                                            date = pd.to_datetime(point["x"])
+                                            price = float(point["y"])
+                                            prices_data[date] = price
+                            except Exception as e:
+                                logger.debug(f"JSON parse error: {e}")
+                                continue
+
+            if prices_data:
+                series = pd.Series(prices_data).sort_index()
+                logger.info(f"Recuperati {len(series)} punti dati da JustETF per {isin}")
+                return series
+            else:
+                logger.warning(f"Nessun dato storico trovato su JustETF per {isin}")
+                return None
+
+        except Exception as e:
+            logger.error(f"Errore recupero prezzi JustETF per {isin}: {e}")
+            return None
+
+
+# Istanza globale
+justetf_collector = JustETFCollector()

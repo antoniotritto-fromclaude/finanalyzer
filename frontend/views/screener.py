@@ -46,13 +46,15 @@ def _add_to_portfolio(symbol):
     if symbol in st.session_state["pf_symbols"]:
         return False, f"⚠️ {symbol} già nel portafoglio"
 
-    # Valida con Yahoo Finance O Morningstar (ISIN/URL)
+    # Valida con Yahoo Finance, Morningstar, JustETF, o Investing.com
     try:
         from backend.data_loader import load_prices_smart, is_isin
         from backend.data_collectors.morningstar import MorningstarCollector
+        from backend.data_collectors.investing import investing_collector
 
         # Determina il tipo di input
-        is_url = MorningstarCollector.is_morningstar_url(symbol)
+        is_ms_url = MorningstarCollector.is_morningstar_url(symbol)
+        is_inv_url = investing_collector.is_investing_url(symbol)
         is_isin_code = is_isin(symbol)
 
         # Test caricamento prezzi
@@ -60,25 +62,34 @@ def _add_to_portfolio(symbol):
 
         if prices_df.empty or symbol not in prices_df.columns:
             # Messaggio errore dettagliato
-            if is_url:
+            if is_ms_url:
                 fund_id = MorningstarCollector.extract_fund_id_from_url(symbol)
                 if fund_id:
                     return False, f"❌ Fondo {fund_id} non trovato su Morningstar. Verifica l'URL o prova con l'ISIN."
                 else:
-                    return False, f"❌ Impossibile estrarre ID da URL. Formato non riconosciuto."
+                    return False, f"❌ Impossibile estrarre ID da URL Morningstar. Formato non riconosciuto."
+            elif is_inv_url:
+                instrument = investing_collector.extract_instrument_from_url(symbol)
+                if instrument:
+                    return False, f"❌ Strumento {instrument} non trovato su Investing.com. Verifica l'URL."
+                else:
+                    return False, f"❌ Impossibile estrarre strumento da URL Investing.com. Formato non riconosciuto."
             elif is_isin_code:
-                return False, f"❌ ISIN {symbol} non trovato su Morningstar. Verifica il codice o prova con l'URL diretto."
+                return False, f"❌ ISIN {symbol} non trovato su Morningstar/JustETF. Verifica il codice o prova con l'URL diretto."
             else:
                 return False, f"❌ Ticker {symbol} non trovato su Yahoo Finance. Verifica il simbolo."
 
         st.session_state["pf_symbols"].append(symbol)
 
         # Messaggio successo differenziato
-        if is_url:
+        if is_ms_url:
             fund_id = MorningstarCollector.extract_fund_id_from_url(symbol)
             return True, f"✅ Fondo {fund_id} aggiunto! (Morningstar)"
+        elif is_inv_url:
+            instrument = investing_collector.extract_instrument_from_url(symbol)
+            return True, f"✅ {instrument} aggiunto! (Investing.com)"
         elif is_isin_code:
-            return True, f"✅ Fondo {symbol} aggiunto! (Morningstar)"
+            return True, f"✅ Fondo {symbol} aggiunto! (Morningstar/JustETF)"
         else:
             return True, f"✅ {symbol} aggiunto!"
 
@@ -99,12 +110,13 @@ def render():
             <li>Vai su <b>Portafoglio</b> per gestire e ottimizzare</li>
         </ol>
         <div style="margin-top:12px;padding:10px;background:#d1fae5;border-radius:8px;font-size:0.88rem;">
-            ✅ <b>Supporto COMPLETO fondi Morningstar!</b>
+            ✅ <b>Supporto MULTI-FONTE per massima copertura!</b>
             <br>💡 <b>Puoi aggiungere:</b>
-            <br>&nbsp;&nbsp;&nbsp;• Ticker Yahoo (AAPL, SPY, VWCE.DE)
-            <br>&nbsp;&nbsp;&nbsp;• ISIN Morningstar (LU2056383347)
-            <br>&nbsp;&nbsp;&nbsp;• Link Morningstar diretto (https://www.morningstar.it/it/funds/snapshot/snapshot.aspx?id=...)
-            <br>📊 Dati aggiornati 1x/giorno con cache automatica
+            <br>&nbsp;&nbsp;&nbsp;• <b>Ticker</b> Yahoo Finance → AAPL, SPY, VWCE.DE, BTC-USD
+            <br>&nbsp;&nbsp;&nbsp;• <b>ISIN</b> Morningstar/JustETF → LU2056383347, IE00B4L5Y983
+            <br>&nbsp;&nbsp;&nbsp;• <b>Link</b> Morningstar → https://morningstar.it/...
+            <br>&nbsp;&nbsp;&nbsp;• <b>Link</b> Investing.com → https://it.investing.com/equities/...
+            <br>📊 Cache 24h automatica | 🔄 Fallback multi-fonte per massima affidabilità
         </div>
     </div>
     """, unsafe_allow_html=True)
@@ -163,9 +175,9 @@ def render():
     col1, col2 = st.columns([4, 1])
     with col1:
         manual_symbol = st.text_input(
-            "Inserisci Ticker, ISIN o Link Morningstar",
-            placeholder="Es: AAPL, LU2056383347, https://morningstar.it/...",
-            help="Supporta: Ticker Yahoo, ISIN fondi, oppure URL Morningstar diretto",
+            "Inserisci Ticker, ISIN o Link",
+            placeholder="Es: AAPL, LU2056383347, https://morningstar.it/..., https://investing.com/...",
+            help="Supporta: Ticker Yahoo Finance, ISIN (Morningstar/JustETF), URL Morningstar, URL Investing.com",
             key="manual_search"
         )
     with col2:
