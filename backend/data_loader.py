@@ -77,6 +77,8 @@ def load_prices_smart(symbols: List[str], period: str = "3y") -> pd.DataFrame:
             if cached_prices is not None and not cached_prices.empty:
                 logger.info(f"  ✅ Caricato da cache ({len(cached_prices)} punti)")
                 prices[symbol] = cached_prices
+                # Aggiorna timestamp nei recenti (lo sposta in cima)
+                funds_cache.add_recent(cache_key, f"Fund_{fund_id}", "Morningstar")
                 continue
 
             # Step 2: Scraping Morningstar diretto
@@ -86,7 +88,11 @@ def load_prices_smart(symbols: List[str], period: str = "3y") -> pd.DataFrame:
 
                 if fund_prices is not None and not fund_prices.empty:
                     # Salva in cache con cache_key
-                    funds_cache.set_prices(cache_key, f"Fund_{fund_id}", fund_prices)
+                    fund_name = f"Fund_{fund_id}"
+                    funds_cache.set_prices(cache_key, fund_name, fund_prices)
+
+                    # Aggiungi a recenti
+                    funds_cache.add_recent(cache_key, fund_name, "Morningstar")
 
                     logger.info(f"  ✅ Caricato da Morningstar ({len(fund_prices)} punti)")
                     prices[symbol] = fund_prices
@@ -106,6 +112,8 @@ def load_prices_smart(symbols: List[str], period: str = "3y") -> pd.DataFrame:
             if cached_prices is not None and not cached_prices.empty:
                 logger.info(f"  ✅ Caricato da cache ({len(cached_prices)} punti)")
                 prices[symbol] = cached_prices
+                # Aggiorna timestamp nei recenti (lo sposta in cima)
+                funds_cache.add_recent(symbol, symbol, "Morningstar")
                 continue
 
             # Step 2: Scraping Morningstar
@@ -117,6 +125,9 @@ def load_prices_smart(symbols: List[str], period: str = "3y") -> pd.DataFrame:
                     # Salva in cache
                     fund_name = symbol  # Usa ISIN come nome se non trovato
                     funds_cache.set_prices(symbol, fund_name, fund_prices)
+
+                    # Aggiungi a recenti
+                    funds_cache.add_recent(symbol, fund_name, "Morningstar")
 
                     logger.info(f"  ✅ Caricato da Morningstar ({len(fund_prices)} punti)")
                     prices[symbol] = fund_prices

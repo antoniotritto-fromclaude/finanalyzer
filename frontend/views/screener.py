@@ -95,6 +95,50 @@ def render():
     st.markdown("<br>", unsafe_allow_html=True)
 
     # ═══════════════════════════════════════════════════════════════
+    # FONDI RECENTI (ultimi 20)
+    # ═══════════════════════════════════════════════════════════════
+    from backend.cache.funds_cache import funds_cache
+
+    recent_funds = funds_cache.get_recent()
+    if recent_funds:
+        with st.expander(f"⏱️ Fondi Recenti ({len(recent_funds)}) - Accesso Rapido"):
+            st.markdown("""
+            <div style="font-size:0.85rem;color:#6b7280;margin-bottom:12px;">
+                Gli ultimi 20 fondi cercati sono salvati in cache per accesso veloce.
+                Clicca per aggiungerli al portafoglio senza attendere.
+            </div>
+            """, unsafe_allow_html=True)
+
+            # Mostra in griglia 4 colonne
+            cols_per_row = 4
+            for i in range(0, len(recent_funds), cols_per_row):
+                cols = st.columns(cols_per_row)
+                for j, col in enumerate(cols):
+                    idx = i + j
+                    if idx < len(recent_funds):
+                        fund = recent_funds[idx]
+                        with col:
+                            # Tronca nome se troppo lungo
+                            display_name = fund.get("name", "")[:25]
+                            if len(fund.get("name", "")) > 25:
+                                display_name += "..."
+
+                            if st.button(
+                                f"➕ {display_name}",
+                                key=f"recent_{idx}",
+                                use_container_width=True,
+                                help=f"{fund.get('name')} - {fund.get('source')}"
+                            ):
+                                success, msg = _add_to_portfolio(fund.get("id"))
+                                if success:
+                                    st.success(msg)
+                                else:
+                                    st.warning(msg)
+                                st.rerun()
+
+    st.markdown("<br>", unsafe_allow_html=True)
+
+    # ═══════════════════════════════════════════════════════════════
     # RICERCA MANUALE
     # ═══════════════════════════════════════════════════════════════
     st.subheader("🔎 Ricerca Manuale")

@@ -13,7 +13,9 @@ logger = logging.getLogger(__name__)
 
 CACHE_DIR = os.path.dirname(os.path.abspath(__file__))
 CACHE_FILE = os.path.join(CACHE_DIR, "funds_data.json")
+RECENT_FILE = os.path.join(CACHE_DIR, "recent_funds.json")
 CACHE_TTL_HOURS = 24  # Cache valida per 24 ore
+MAX_RECENT_FUNDS = 20  # Mantieni solo ultimi 20 fondi
 
 
 class FundsCache:
@@ -160,6 +162,90 @@ class FundsCache:
             })
 
         return info
+
+    def _load_recent(self) -> list:
+        """Carica lista fondi recenti"""
+        if not os.path.exists(RECENT_FILE):
+            return []
+        try:
+            with open(RECENT_FILE, 'r', encoding='utf-8') as f:
+                return json.load(f)
+        except Exception as e:
+            logger.warning(f"Errore lettura recent: {e}")
+            return []
+
+    def _save_recent(self, recent: list):
+        """Salva lista fondi recenti"""
+        try:
+            with open(RECENT_FILE, 'w', encoding='utf-8') as f:
+                json.dump(recent, f, indent=2, ensure_ascii=False)
+        except Exception as e:
+            logger.error(f"Errore scrittura recent: {e}")
+
+    def add_recent(self, identifier: str, name: str, source: str = "Morningstar"):
+        """
+        Aggiunge un fondo alla lista recenti
+
+        Args:
+            identifier: ISIN, URL, o cache_key
+            name: Nome del fondo
+            source: Fonte dati (Morningstar, Yahoo Finance)
+        """
+        recent = self._load_recent()
+
+        # Rimuovi se già presente (lo sposteremo in cima)
+        recent = [r for r in recent if r.get("id") != identifier]
+
+        # Aggiungi in cima
+        recent.insert(0, {
+            "id": identifier,
+            "name": name,
+            "source": source,
+            "added": datetime.now().isoformat(),
+        })
+
+        # Mantieni solo ultimi 20
+        recent = recent[:MAX_RECENT_FUNDS]
+
+        self._save_recent(recent)
+        logger.info(f"Aggiunto a recenti: {name} ({identifier})")
+
+        # Cleanup cache: rimuovi fondi non più nei recenti
+        self._cleanup_old_cache(recent)
+
+    def get_recent(self) -> list:
+        """
+        Restituisce lista fondi recenti
+
+        Returns:
+            Lista di dict con {id, name, source, added}
+        """
+        return self._load_recent()
+
+    def _cleanup_old_cache(self, recent: list):
+        """
+        Rimuove dalla cache i fondi non più nei recenti 20
+
+        Args:
+            recent: Lista fondi recenti
+        """
+        cache = self._load_cache()
+        recent_ids = {r.get("id") for r in recent}
+
+        # Trova fondi da rimuovere
+        to_remove = [isin for isin in cache.keys() if isin not in recent_ids]
+
+        if to_remove:
+            for isin in to_remove:
+                del cache[isin]
+            self._save_cache(cache)
+            logger.info(f"Cleanup cache: rimossi {len(to_remove)} fondi vecchi")
+
+    def clear_recent(self):
+        """Cancella lista recenti"""
+        if os.path.exists(RECENT_FILE):
+            os.remove(RECENT_FILE)
+        logger.info("Lista recenti cancellata")
 
 
 # Istanza globale
