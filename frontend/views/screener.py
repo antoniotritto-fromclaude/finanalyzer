@@ -88,6 +88,34 @@ CRYPTO = {
     },
 }
 
+# Fondi Morningstar popolari (ISIN) - da https://global.morningstar.com/it/investimenti/fondi/
+FONDI_MORNINGSTAR = {
+    "🇮🇹 Italia Top Rated": {
+        "IE0031746028": "Mediolanum Best Brands (5★)",
+        "IT0000388345": "Arca Azioni Italia (4★)",
+        "IT0001069165": "Eurizon Azioni Intl (4★)",
+        "IT0005090238": "Anima Crescita Italia (3★)",
+    },
+    "🌍 Azionari Globali": {
+        "LU0048578792": "Fidelity European Growth (4★)",
+        "LU0329592967": "JPM Global Focus (5★)",
+        "LU0130102774": "JPM US Technology (4★)",
+        "IE00B4L5Y983": "iShares MSCI World (4★)",
+    },
+    "🏛️ Obbligazionari": {
+        "LU0232438889": "Allianz Interbond (4★)",
+        "IE00B9F5YL18": "Pimco GIS Income (5★)",
+        "LU0336084032": "Nordea EUR Covered Bond (3★)",
+        "LU0106280836": "Schroder EUR Corp Bond (4★)",
+    },
+    "⚖️ Bilanciati": {
+        "FR0010135103": "Carmignac Patrimoine (3★)",
+        "LU0456863566": "Nordea Stable Return (4★)",
+        "LU0128522681": "M&G Dynamic Allocation (4★)",
+        "IE00B19Z9Z06": "Vanguard LifeStrategy 60 (4★)",
+    },
+}
+
 
 def _add_to_portfolio(symbol):
     """Aggiunge un simbolo al portafoglio"""
@@ -143,14 +171,24 @@ def _add_to_portfolio(symbol):
         logger.info(f"[SCREENER] Result: {len(prices_df)} rows, columns={list(prices_df.columns)}")
 
         if prices_df.empty or symbol not in prices_df.columns:
-            return False, f"❌ {display_name} non trovato su {expected_source}. Verifica l'input."
+            # Messaggio differenziato per tipo di fonte
+            if is_ms_url or is_isin_code:
+                return False, f"❌ {display_name} non trovato su {expected_source}.\n\n⚠️ **Possibile blocco di rete/proxy** - Morningstar potrebbe essere temporaneamente inaccessibile.\n\n💡 **Suggerimenti:**\n- Prova con un ISIN diverso\n- Usa ticker Yahoo Finance alternativi\n- Contatta l'amministratore se il problema persiste"
+            else:
+                return False, f"❌ {display_name} non trovato su {expected_source}. Verifica l'input."
 
         st.session_state["pf_symbols"].append(symbol)
         return True, f"✅ {display_name} aggiunto! ({expected_source})"
 
     except Exception as e:
         logger.error(f"[SCREENER] Exception: {e}", exc_info=True)
-        return False, f"❌ Errore: {str(e)[:150]}"
+        error_msg = str(e)
+
+        # Riconosci errori di rete
+        if any(err in error_msg.lower() for err in ["proxy", "connection", "timeout", "403", "tunnel"]):
+            return False, f"❌ **Errore di Rete/Proxy**\n\nImpossibile connettersi a {expected_source}.\n\n⚠️ Il sistema potrebbe bloccare le connessioni HTTPS.\n\n💡 Contatta l'amministratore per risolvere il problema di rete."
+        else:
+            return False, f"❌ Errore: {error_msg[:150]}"
 
 
 def render():
@@ -260,8 +298,8 @@ def render():
     # ═══════════════════════════════════════════════════════════════
     st.subheader("⚡ Selezione Rapida")
 
-    tab_stocks, tab_etf, tab_comm, tab_crypto = st.tabs([
-        "📈 Azioni", "📡 ETF", "🌾 Commodities", "💰 Crypto"
+    tab_stocks, tab_etf, tab_fondi, tab_comm, tab_crypto = st.tabs([
+        "📈 Azioni", "📡 ETF", "🏦 Fondi", "🌾 Commodities", "💰 Crypto"
     ])
 
     # ──────────────────────────────────────────────────────────────
@@ -300,6 +338,29 @@ def render():
                         display_name = name[:18] + "..." if len(name) > 18 else name
                         if st.button(f"{display_name}\n({ticker})", key=f"etf_{ticker}", use_container_width=True, help=f"{name} - {ticker}"):
                             success, msg = _add_to_portfolio(ticker)
+                            if success:
+                                st.success(msg)
+                                time.sleep(0.5)
+                                st.rerun()
+                            else:
+                                st.warning(msg)
+
+    # ──────────────────────────────────────────────────────────────
+    # TAB FONDI MORNINGSTAR
+    # ──────────────────────────────────────────────────────────────
+    with tab_fondi:
+        st.markdown("Seleziona fondi Morningstar da aggiungere al portafoglio:")
+        st.info("💡 **NOTA**: I fondi vengono caricati tramite ISIN. Se riscontri errori di rete, potrebbe essere un blocco proxy temporaneo.")
+
+        for category, fondi_dict in FONDI_MORNINGSTAR.items():
+            with st.expander(f"{category} ({len(fondi_dict)} fondi)"):
+                cols = st.columns(3)
+                for i, (isin, name) in enumerate(fondi_dict.items()):
+                    with cols[i % 3]:
+                        # Mostra nome abbreviato + rating
+                        display_name = name[:22] + "..." if len(name) > 22 else name
+                        if st.button(f"{display_name}\n(ISIN: {isin[:8]}...)", key=f"fund_{isin}", use_container_width=True, help=f"{name}\nISIN: {isin}"):
+                            success, msg = _add_to_portfolio(isin)
                             if success:
                                 st.success(msg)
                                 time.sleep(0.5)
