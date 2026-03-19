@@ -62,11 +62,12 @@ def load_prices_smart(symbols: List[str], period: str = "3y") -> pd.DataFrame:
 
         # Check 1: È un URL Morningstar?
         if ms_collector.is_morningstar_url(symbol):
-            logger.info(f"  → Rilevato URL Morningstar")
+            logger.info(f"  → Rilevato URL Morningstar: {symbol}")
             fund_id = ms_collector.extract_fund_id_from_url(symbol)
 
             if not fund_id:
                 logger.error(f"  ❌ Impossibile estrarre ID da URL: {symbol}")
+                logger.error(f"  💡 Formati supportati: ?id=XXX, /fondi/XXX, /funds/XXX")
                 continue
 
             # Usa fund_id come chiave per cache

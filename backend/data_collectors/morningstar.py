@@ -32,22 +32,34 @@ class MorningstarCollector:
         Estrae l'ID del fondo da un URL Morningstar
 
         Args:
-            url: URL Morningstar (es: https://www.morningstar.it/it/funds/snapshot/snapshot.aspx?id=F00000XX1Y)
+            url: URL Morningstar (vari formati supportati)
 
         Returns:
             Fund ID se trovato, None altrimenti
+
+        Supported formats:
+            - https://www.morningstar.it/it/funds/snapshot/snapshot.aspx?id=F00000XX1Y
+            - https://global.morningstar.com/it/investimenti/fondi/F00000XX1Y/quote
+            - https://www.morningstar.it/it/funds/F00000XX1Y/overview
         """
-        # Pattern per URL Morningstar
+        # Pattern per URL Morningstar (ordine di precedenza)
         patterns = [
-            r'[?&]id=([A-Z0-9]+)',  # Standard query param
-            r'/snapshot/([A-Z0-9]+)',  # ID nel path
+            r'[?&]id=([A-Z0-9]+)',                    # Query param: ?id=F000014WJO
+            r'/fondi/([A-Z0-9]+)',                    # Path: /fondi/F000014WJO/quote
+            r'/funds/([A-Z0-9]+)',                    # Path: /funds/F000014WJO/overview
+            r'/snapshot/([A-Z0-9]+)',                 # Path: /snapshot/F000014WJO
+            r'/securityId=([A-Z0-9]+)',               # SecurityId param
+            r'morningstar\.com/[a-z]{2}/[^/]+/[^/]+/([A-Z0-9]+)',  # Generic path with ID
         ]
 
         for pattern in patterns:
             match = re.search(pattern, url, re.IGNORECASE)
             if match:
-                return match.group(1)
+                fund_id = match.group(1).upper()
+                logger.info(f"ID estratto da URL: {fund_id}")
+                return fund_id
 
+        logger.warning(f"Impossibile estrarre ID da URL: {url}")
         return None
 
     @staticmethod

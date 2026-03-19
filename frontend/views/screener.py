@@ -46,27 +46,44 @@ def _add_to_portfolio(symbol):
     if symbol in st.session_state["pf_symbols"]:
         return False, f"⚠️ {symbol} già nel portafoglio"
 
-    # Valida con Yahoo Finance O Morningstar (ISIN)
+    # Valida con Yahoo Finance O Morningstar (ISIN/URL)
     try:
         from backend.data_loader import load_prices_smart, is_isin
+        from backend.data_collectors.morningstar import MorningstarCollector
+
+        # Determina il tipo di input
+        is_url = MorningstarCollector.is_morningstar_url(symbol)
+        is_isin_code = is_isin(symbol)
 
         # Test caricamento prezzi
         prices_df = load_prices_smart([symbol], period="5d")
 
         if prices_df.empty or symbol not in prices_df.columns:
-            source = "Morningstar" if is_isin(symbol) else "Yahoo Finance"
-            return False, f"❌ {symbol} non trovato su {source}"
+            # Messaggio errore dettagliato
+            if is_url:
+                fund_id = MorningstarCollector.extract_fund_id_from_url(symbol)
+                if fund_id:
+                    return False, f"❌ Fondo {fund_id} non trovato su Morningstar. Verifica l'URL o prova con l'ISIN."
+                else:
+                    return False, f"❌ Impossibile estrarre ID da URL. Formato non riconosciuto."
+            elif is_isin_code:
+                return False, f"❌ ISIN {symbol} non trovato su Morningstar. Verifica il codice o prova con l'URL diretto."
+            else:
+                return False, f"❌ Ticker {symbol} non trovato su Yahoo Finance. Verifica il simbolo."
 
         st.session_state["pf_symbols"].append(symbol)
 
-        # Messaggio differenziato per tipo
-        if is_isin(symbol):
+        # Messaggio successo differenziato
+        if is_url:
+            fund_id = MorningstarCollector.extract_fund_id_from_url(symbol)
+            return True, f"✅ Fondo {fund_id} aggiunto! (Morningstar)"
+        elif is_isin_code:
             return True, f"✅ Fondo {symbol} aggiunto! (Morningstar)"
         else:
             return True, f"✅ {symbol} aggiunto!"
 
     except Exception as e:
-        return False, f"❌ Errore: {str(e)[:50]}"
+        return False, f"❌ Errore: {str(e)[:100]}"
 
 
 def render():
