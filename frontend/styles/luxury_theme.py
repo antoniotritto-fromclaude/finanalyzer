@@ -20,7 +20,7 @@ Typography:
 # ══════════════════════════════════════════════════════════════════════
 
 COLORS = {
-    # Primary Colors
+    # Primary Colors (DARK)
     "primary": "#0A1628",           # Deep navy blue
     "primary_light": "#1E293B",     # Lighter navy
     "primary_lighter": "#334155",   # Even lighter
@@ -40,28 +40,28 @@ COLORS = {
     "info": "#3B82F6",              # Blue
     "info_light": "#DBEAFE",        # Pale blue
 
-    # Neutral Colors
+    # Neutral Colors (DARK THEME)
     "white": "#FFFFFF",
-    "gray_50": "#F9FAFB",
-    "gray_100": "#F3F4F6",
-    "gray_200": "#E5E7EB",
-    "gray_300": "#D1D5DB",
+    "gray_50": "#1F2937",           # DARK
+    "gray_100": "#374151",          # DARK
+    "gray_200": "#4B5563",          # DARK
+    "gray_300": "#6B7280",          # DARK
     "gray_400": "#9CA3AF",
-    "gray_500": "#6B7280",
-    "gray_600": "#4B5563",
-    "gray_700": "#374151",
-    "gray_800": "#1F2937",
-    "gray_900": "#111827",
+    "gray_500": "#D1D5DB",          # LIGHT for dark bg
+    "gray_600": "#E5E7EB",          # LIGHT for dark bg
+    "gray_700": "#F3F4F6",          # LIGHT for dark bg
+    "gray_800": "#F9FAFB",          # LIGHT for dark bg
+    "gray_900": "#FFFFFF",          # LIGHT for dark bg
 
-    # Background
-    "bg_primary": "#FAFBFC",        # Off-white background
-    "bg_secondary": "#F5F7FA",      # Light gray
-    "bg_card": "#FFFFFF",           # Pure white cards
+    # Background (DARK THEME)
+    "bg_primary": "#0A1628",        # Dark navy
+    "bg_secondary": "#1E293B",      # Slightly lighter
+    "bg_card": "#1E293B",           # Dark cards
 
-    # Text
-    "text_primary": "#0A1628",      # Dark navy
-    "text_secondary": "#4B5563",    # Medium gray
-    "text_tertiary": "#9CA3AF",     # Light gray
+    # Text (DARK THEME - inverted)
+    "text_primary": "#FFFFFF",      # White text
+    "text_secondary": "#E5E7EB",    # Light gray
+    "text_tertiary": "#9CA3AF",     # Medium gray
 }
 
 # ══════════════════════════════════════════════════════════════════════
@@ -81,12 +81,12 @@ CHART_COLORS = [
 
 CHART_THEME_LUXURY = {
     "paper_bgcolor": "rgba(0,0,0,0)",           # Transparent
-    "plot_bgcolor": "rgba(255,255,255,0.6)",    # Semi-transparent white
+    "plot_bgcolor": "rgba(30,41,59,0.5)",       # Dark semi-transparent
 
     "font": {
         "family": "Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
         "size": 13,
-        "color": COLORS["text_primary"],
+        "color": "#E5E7EB",  # Light text for dark bg
     },
 
     "margin": {
@@ -193,7 +193,7 @@ LUXURY_CSS = f"""
 /* Body */
 body {{
     font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-    background: linear-gradient(135deg, {COLORS["bg_primary"]} 0%, {COLORS["bg_secondary"]} 100%);
+    background: linear-gradient(135deg, #0A1628 0%, #1E293B 50%, #0F1A2D 100%);
     color: var(--text-primary);
 }}
 
@@ -210,8 +210,8 @@ body {{
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     backdrop-filter: blur(10px);
     background: linear-gradient(135deg,
-        rgba(255,255,255,0.9) 0%,
-        rgba(255,255,255,0.7) 100%);
+        rgba(30,41,59,0.95) 0%,
+        rgba(51,65,85,0.85) 100%);
 }}
 
 .luxury-card:hover {{
@@ -237,8 +237,8 @@ body {{
     text-align: center;
     padding: 24px 20px;
     background: linear-gradient(135deg,
-        rgba(255,255,255,0.95) 0%,
-        rgba(255,255,255,0.85) 100%);
+        rgba(30,41,59,0.95) 0%,
+        rgba(51,65,85,0.85) 100%);
     border-radius: var(--radius-md);
     border: 1px solid {COLORS["gray_200"]};
     box-shadow: var(--shadow-md);
@@ -332,8 +332,8 @@ body {{
 
 .chart-container {{
     background: linear-gradient(135deg,
-        rgba(255,255,255,0.95) 0%,
-        rgba(255,255,255,0.85) 100%);
+        rgba(30,41,59,0.95) 0%,
+        rgba(51,65,85,0.85) 100%);
     border-radius: var(--radius-lg);
     padding: 24px;
     box-shadow: var(--shadow-lg);

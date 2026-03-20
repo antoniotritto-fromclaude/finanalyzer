@@ -63,13 +63,13 @@ button[kind="header"]:hover {
 
 /* ===== BACKGROUND ===== */
 .stApp {
-    background: linear-gradient(135deg, #dce8f5 0%, #c3d7ee 40%, #b8cfe8 100%);
+    background: linear-gradient(135deg, #0A1628 0%, #1E293B 50%, #0F1A2D 100%);
     min-height: 100vh;
 }
 
 /* ===== SIDEBAR ===== */
 section[data-testid="stSidebar"] {
-    background: linear-gradient(180deg, #0f2a4a 0%, #1a4f8a 60%, #1c5fa8 100%) !important;
+    background: linear-gradient(180deg, #1A3A5C 0%, #1E4464 50%, #224B6E 100%) !important;
     border-right: none !important;
 }
 
