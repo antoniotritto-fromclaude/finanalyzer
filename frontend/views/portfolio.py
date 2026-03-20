@@ -297,7 +297,6 @@ def render():
         if st.button("📄 Genera Report HTML", type="primary", width="stretch"):
             try:
                 from backend.reports.html_report_generator import generate_html_report
-                from frontend.components.charts import line_chart, heatmap_correlation
 
                 st.info("✅ Generazione report HTML...")
 
@@ -358,7 +357,6 @@ def render():
                     st.info("⏳ Calcolo predizioni...")
                     try:
                         from backend.models.predictor import PortfolioPredictor
-                        from frontend.components.charts import prediction_chart as pred_chart_func
                         if not prices_df.empty:
                             predictor = PortfolioPredictor(prices_df)
                             scenarios = predictor.predict_portfolio_scenarios(
