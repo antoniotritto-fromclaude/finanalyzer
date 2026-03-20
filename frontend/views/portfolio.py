@@ -68,10 +68,11 @@ DARK_THEME_CSS = """
 .section-header-dark {
     font-size: 1.8rem;
     font-weight: 800;
-    color: #D4AF37;
+    color: #FFFFFF !important;
     margin: 40px 0 20px 0;
     padding-bottom: 12px;
     border-bottom: 2px solid #D4AF37;
+    text-shadow: 0 2px 4px rgba(0,0,0,0.3);
 }
 
 .composition-table {
@@ -312,42 +313,16 @@ def render():
         st.plotly_chart(fig_pie, use_container_width=True, config={"displayModeBar": False})
 
     with col_table:
-        # Composition table
-        st.markdown('<div class="composition-table">', unsafe_allow_html=True)
-
-        table_html = """
-        <table>
-            <thead>
-                <tr>
-                    <th>Asset</th>
-                    <th>Peso</th>
-                    <th>Allocazione Visiva</th>
-                </tr>
-            </thead>
-            <tbody>
-        """
+        # Composition table - COMBINED HTML
+        table_html = '<div class="composition-table"><table><thead><tr><th>Asset</th><th>Peso</th><th>Allocazione Visiva</th></tr></thead><tbody>'
 
         for symbol, weight in weights.items():
             weight_pct = f"{weight*100:.1f}%"
-            table_html += f"""
-                <tr>
-                    <td><b>{symbol}</b></td>
-                    <td><b>{weight_pct}</b></td>
-                    <td>
-                        <div class="weight-bar">
-                            <div class="weight-bar-fill" style="width:{weight*100}%;"></div>
-                        </div>
-                    </td>
-                </tr>
-            """
+            table_html += f'<tr><td style="color:#E5E7EB;"><b>{symbol}</b></td><td style="color:#E5E7EB;"><b>{weight_pct}</b></td><td><div class="weight-bar"><div class="weight-bar-fill" style="width:{weight*100}%;"></div></div></td></tr>'
 
-        table_html += """
-            </tbody>
-        </table>
-        """
+        table_html += '</tbody></table></div>'
 
         st.markdown(table_html, unsafe_allow_html=True)
-        st.markdown('</div>', unsafe_allow_html=True)
 
     # ══════════════════════════════════════════════════════════════════
     # 📈 SECTION 2: PERFORMANCE & CORRELATION
