@@ -1,12 +1,12 @@
 """
-Portfolio Builder + Ottimizzazione Markowitz
+💼 Portfolio Dashboard - Unified Flow
+Complete portfolio analysis in one page: composition, performance, backtest, predictions
 """
 import streamlit as st
 import pandas as pd
 import numpy as np
 import yfinance as yf
-import time
-from datetime import datetime
+from datetime import datetime, timedelta
 from frontend.styles.design import badge, color_pct, chip
 from frontend.components.charts import (
     line_chart, pie_chart, efficient_frontier_chart, heatmap_correlation
@@ -15,414 +15,592 @@ from backend.analyzers.portfolio_optimizer import PortfolioOptimizer
 from backend.data_loader import load_prices_smart
 
 
+# ══════════════════════════════════════════════════════════════════════
+# 🎨 DARK THEME CSS (inspired by provided image)
+# ══════════════════════════════════════════════════════════════════════
+
+DARK_THEME_CSS = """
+<style>
+/* Dark Dashboard Theme */
+.portfolio-dashboard {
+    background: linear-gradient(135deg, #0A1628 0%, #1E293B 100%);
+    border-radius: 16px;
+    padding: 30px;
+    margin: 20px 0;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+}
+
+.metric-card-dark {
+    background: linear-gradient(135deg, #1E293B 0%, #334155 100%);
+    border: 1px solid #334155;
+    border-radius: 12px;
+    padding: 20px;
+    text-align: center;
+    transition: all 0.3s ease;
+}
+
+.metric-card-dark:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(212, 175, 55, 0.2);
+    border-color: #D4AF37;
+}
+
+.metric-label-dark {
+    font-size: 0.85rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: #9CA3AF;
+    margin-bottom: 8px;
+}
+
+.metric-value-dark {
+    font-size: 2rem;
+    font-weight: 800;
+    color: #FFFFFF;
+    font-variant-numeric: tabular-nums;
+}
+
+.metric-value-dark.positive { color: #10B981; }
+.metric-value-dark.negative { color: #EF4444; }
+.metric-value-dark.gold { color: #D4AF37; }
+
+.section-header-dark {
+    font-size: 1.8rem;
+    font-weight: 800;
+    color: #D4AF37;
+    margin: 40px 0 20px 0;
+    padding-bottom: 12px;
+    border-bottom: 2px solid #D4AF37;
+}
+
+.composition-table {
+    background: #1E293B;
+    border-radius: 12px;
+    overflow: hidden;
+    margin: 20px 0;
+}
+
+.composition-table table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.composition-table th {
+    background: #0A1628;
+    color: #D4AF37;
+    padding: 15px;
+    text-align: left;
+    font-weight: 700;
+    font-size: 0.9rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.composition-table td {
+    padding: 12px 15px;
+    color: #E5E7EB;
+    border-bottom: 1px solid #334155;
+}
+
+.composition-table tr:hover td {
+    background: #334155;
+}
+
+.weight-bar {
+    background: #334155;
+    border-radius: 8px;
+    height: 8px;
+    width: 100%;
+    overflow: hidden;
+}
+
+.weight-bar-fill {
+    background: linear-gradient(90deg, #D4AF37 0%, #B8860B 100%);
+    height: 100%;
+    border-radius: 8px;
+    transition: width 0.5s ease;
+}
+
+.status-badge {
+    display: inline-block;
+    padding: 6px 16px;
+    border-radius: 20px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.status-badge.success {
+    background: rgba(16, 185, 129, 0.2);
+    color: #10B981;
+    border: 1px solid #10B981;
+}
+
+.status-badge.warning {
+    background: rgba(245, 158, 11, 0.2);
+    color: #F59E0B;
+    border: 1px solid #F59E0B;
+}
+
+.status-badge.info {
+    background: rgba(59, 130, 246, 0.2);
+    color: #3B82F6;
+    border: 1px solid #3B82F6;
+}
+</style>
+"""
+
+
+# ══════════════════════════════════════════════════════════════════════
+# 🔧 HELPER FUNCTIONS
+# ══════════════════════════════════════════════════════════════════════
+
 def _load_prices(symbols, period="3y"):
-    """
-    Carica prezzi da Yahoo Finance O Morningstar
-    Supporta ticker standard E ISIN fondi
-    """
+    """Load prices from Yahoo Finance or Morningstar"""
     return load_prices_smart(symbols, period=period)
 
 
-def render():
-    st.title("💼 Costruttore di Portafoglio")
+def _create_metric_card(label, value, trend=None, col_class=""):
+    """Create dark themed metric card"""
+    trend_class = ""
+    if trend == "positive":
+        trend_class = "positive"
+    elif trend == "negative":
+        trend_class = "negative"
+    elif trend == "gold":
+        trend_class = "gold"
 
-    st.markdown("""
-    <div class="fin-card" style="background:#f0fdf4;border-left:4px solid #22c55e;padding:16px;">
-        <b>✅ Portafoglio Multi-Asset:</b> Aggiungi asset con ticker Yahoo Finance:
-        <ul style="margin:4px 0 0 0;padding-left:20px;">
-            <li><b>📈 Azioni</b>: AAPL, ENI.MI, MSFT, GOOGL, etc.</li>
-            <li><b>📡 ETF</b>: SWDA.MI, SPY, VWCE.DE, QQQ, etc.</li>
-            <li><b>🌾 Commodities</b>: GC=F (Gold), CL=F (Petrolio), NG=F (Gas), etc.</li>
-            <li><b>💰 Crypto</b>: BTC-USD, ETH-USD, SOL-USD, etc.</li>
-        </ul>
-        <div style="margin-top:10px;padding:8px;background:#fef3c7;border-radius:6px;font-size:0.85rem;">
-            ⚠️ <b>Non supportati:</b> Fondi comuni con ISIN - usa ETF equivalenti!<br>
-            💡 <b>Tip:</b> Usa lo <b>Screener</b> per selezione rapida da liste predefinite
-        </div>
+    return f"""
+    <div class="metric-card-dark {col_class}">
+        <div class="metric-label-dark">{label}</div>
+        <div class="metric-value-dark {trend_class}">{value}</div>
     </div>
-    """, unsafe_allow_html=True)
+    """
 
-    st.markdown("<br>", unsafe_allow_html=True)
 
-    # ── Session state ─────────────────────────────────────────────────────────
+# ══════════════════════════════════════════════════════════════════════
+# 🎯 MAIN RENDER FUNCTION
+# ══════════════════════════════════════════════════════════════════════
+
+def render():
+    # Inject dark theme CSS
+    st.markdown(DARK_THEME_CSS, unsafe_allow_html=True)
+
+    st.title("💼 Portfolio Dashboard")
+
+    # ── Session State Init ────────────────────────────────────────────
     if "pf_symbols" not in st.session_state:
         st.session_state["pf_symbols"] = []
     if "pf_weights" not in st.session_state:
         st.session_state["pf_weights"] = {}
 
-    # ── Aggiungi simbolo ──────────────────────────────────────────────────────
-    col_a, col_b = st.columns([4, 1])
-    with col_a:
-        new_sym = st.text_input(
-            "Aggiungi simbolo (Yahoo Finance)",
-            placeholder="Es: AAPL, ENI.MI, VWCE.DE, SPY",
-            key="pf_add_input",
-            help="Inserisci il simbolo Yahoo Finance del titolo da aggiungere"
+    # ══════════════════════════════════════════════════════════════════
+    # 📝 STEP 1: PORTFOLIO SETUP
+    # ══════════════════════════════════════════════════════════════════
+
+    st.markdown("### 🎯 Configurazione Portafoglio")
+
+    col1, col2 = st.columns([2, 1])
+
+    with col1:
+        st.markdown("""
+        <div style="background:#1E293B;border-left:4px solid #D4AF37;padding:16px;border-radius:8px;color:#E5E7EB;">
+            <b style="color:#D4AF37;">✅ Asset Supportati:</b>
+            <ul style="margin:8px 0 0 0;padding-left:20px;color:#9CA3AF;">
+                <li><b>📈 Stocks</b>: AAPL, ENI.MI, MSFT, GOOGL</li>
+                <li><b>📡 ETFs</b>: SWDA.MI, SPY, VWCE.DE, QQQ</li>
+                <li><b>🌾 Commodities</b>: GC=F (Gold), CL=F (Oil)</li>
+                <li><b>💰 Crypto</b>: BTC-USD, ETH-USD</li>
+            </ul>
+        </div>
+        """, unsafe_allow_html=True)
+
+    with col2:
+        period_sel = st.selectbox(
+            "📅 Periodo Analisi",
+            ["1y", "2y", "3y", "5y", "10y", "max"],
+            index=2,
+            help="Periodo per performance e backtest"
         )
-    with col_b:
-        st.markdown("<br>", unsafe_allow_html=True)
-        add_clicked = st.button("➕ Aggiungi", width="stretch", type="primary")
 
-    # Gestione aggiunta simbolo
-    if add_clicked and new_sym:
-        sym = new_sym.strip().upper()
-        if not sym:
-            st.warning("⚠️ Inserisci un simbolo valido")
-        elif sym in st.session_state["pf_symbols"]:
-            st.warning(f"⚠️ {sym} è già nel portafoglio")
-        else:
-            # Valida simbolo con Yahoo Finance
-            with st.spinner(f"Verifica {sym}..."):
-                try:
-                    test_ticker = yf.Ticker(sym)
-                    test_hist = test_ticker.history(period="5d")
-                    if test_hist.empty:
-                        st.error(f"❌ Simbolo {sym} non trovato su Yahoo Finance")
-                    else:
-                        st.session_state["pf_symbols"].append(sym)
-                        st.success(f"✅ {sym} aggiunto al portafoglio!")
-                        time.sleep(0.5)
-                        st.rerun()
-                except Exception as e:
-                    st.error(f"❌ Errore: {sym} non valido ({str(e)})")
+    st.markdown("<br>", unsafe_allow_html=True)
 
-    # Portafogli rapidi (opzionale, in expander)
-    with st.expander("📋 Portafogli Rapidi (Opzionale)"):
-        st.markdown("Carica un portafoglio predefinito per iniziare velocemente:")
-        pre_cols = st.columns(3)
-        presets = {
-            "🌍 Globale Bilanciato": ["SWDA.MI","EIMI.MI","CSSPX.MI"],
-            "🇮🇹 Borsa Italiana":    ["ENI.MI","ISP.MI","ENEL.MI","RACE.MI"],
-            "💻 Tech USA":           ["AAPL","MSFT","GOOGL","NVDA"],
-        }
-        for col, (name, syms) in zip(pre_cols, presets.items()):
-            with col:
-                if st.button(name, width="stretch", key=f"preset_{name}"):
-                    st.session_state["pf_symbols"] = syms.copy()
-                    st.success(f"✅ Caricato: {name}")
-                    time.sleep(0.5)
-                    st.rerun()
+    # ── Symbol Input ──────────────────────────────────────────────────
+    cols_input = st.columns([3, 1, 1])
 
-    # ── Portfolio corrente ────────────────────────────────────────────────────
+    with cols_input[0]:
+        new_symbol = st.text_input(
+            "Aggiungi Asset (Ticker)",
+            placeholder="es: AAPL, ENI.MI, GC=F",
+            key="new_symbol_input"
+        ).upper().strip()
+
+    with cols_input[1]:
+        if st.button("➕ Aggiungi", type="primary", width="stretch"):
+            if new_symbol and new_symbol not in st.session_state["pf_symbols"]:
+                st.session_state["pf_symbols"].append(new_symbol)
+                st.rerun()
+            elif new_symbol in st.session_state["pf_symbols"]:
+                st.warning(f"⚠️ {new_symbol} già presente!")
+
+    with cols_input[2]:
+        if st.button("🗑️ Reset", width="stretch"):
+            st.session_state["pf_symbols"] = []
+            st.session_state["pf_weights"] = {}
+            st.rerun()
+
+    # ── Current Portfolio ─────────────────────────────────────────────
     symbols = st.session_state["pf_symbols"]
 
     if not symbols:
-        st.info("💡 Aggiungi almeno 2 simboli per costruire il portafoglio.")
+        st.info("👆 **Aggiungi almeno 2 asset per iniziare l'analisi**")
         return
 
-    st.markdown("<br>", unsafe_allow_html=True)
-    st.subheader(f"📊 Portafoglio – {len(symbols)} Titoli")
-
-    # Pesi manuali
-    weight_cols = st.columns(min(len(symbols), 5))
-    total_w = 0
-    for i, sym in enumerate(symbols):
-        col = weight_cols[i % 5]
-        default_w = round(100 / len(symbols), 1)
-        w = col.number_input(sym, 0.0, 100.0, default_w, 1.0, key=f"w_{sym}", label_visibility="visible")
-        st.session_state["pf_weights"][sym] = w / 100
-        total_w += w
-
-    if abs(total_w - 100) > 0.5:
-        st.warning(f"⚠️ I pesi sommano a {total_w:.1f}% (devono fare 100%)")
-
-    # Rimuovi simboli
-    rem_cols = st.columns(len(symbols))
-    for col, sym in zip(rem_cols, symbols):
-        if col.button(f"✕ {sym}", key=f"rem_{sym}"):
-            st.session_state["pf_symbols"].remove(sym)
-            st.rerun()
+    # Show current symbols as chips
+    st.markdown("**Portfolio corrente:**")
+    chips_html = " ".join([
+        f'<span style="display:inline-block;background:#334155;color:#E5E7EB;padding:8px 16px;border-radius:20px;margin:4px;font-weight:600;">{s}</span>'
+        for s in symbols
+    ])
+    st.markdown(chips_html, unsafe_allow_html=True)
 
     st.markdown("<br>", unsafe_allow_html=True)
+    st.divider()
 
-    # ── Azioni ────────────────────────────────────────────────────────────────
-    period_sel = st.selectbox("Periodo storico", ["1y","2y","3y","5y"], index=2)
-    act_cols = st.columns(3)
+    # ══════════════════════════════════════════════════════════════════
+    # 📊 STEP 2: LOAD DATA & ANALYSIS
+    # ══════════════════════════════════════════════════════════════════
 
-    with act_cols[0]:
-        show_data = st.button("📈 Visualizza Storico", width="stretch")
-    with act_cols[1]:
-        optimize = st.button("🎯 Ottimizza Markowitz", type="primary", width="stretch")
-    with act_cols[2]:
-        generate_pdf = st.button("📄 Genera Report PDF", width="stretch")
+    if len(symbols) < 2:
+        st.warning("⚠️ **Aggiungi almeno 2 asset per l'analisi**")
+        return
 
-    # ── Carica prezzi ─────────────────────────────────────────────────────────
-    if show_data or optimize or st.session_state.get("pf_prices_loaded"):
-        with st.spinner("Caricamento prezzi..."):
-            prices_df = _load_prices(symbols, period=period_sel)
+    # Load prices
+    with st.spinner(f"📥 Caricamento dati ({period_sel})..."):
+        prices_df = _load_prices(symbols, period=period_sel)
 
-        if prices_df.empty:
-            st.error("❌ Impossibile caricare i prezzi per questi simboli.")
-            st.warning("""
-            **Possibili cause:**
-            - Simboli non validi su Yahoo Finance
-            - ISIN fondi comuni non supportati (es: IT0005239881)
-            - Problemi di connessione
+    if prices_df.empty:
+        st.error("❌ Impossibile caricare i dati. Verifica i ticker su [Yahoo Finance](https://finance.yahoo.com)")
+        return
 
-            **Soluzioni:**
-            - Usa ticker standard (AAPL, SPY, ENI.MI)
-            - Sostituisci fondi con ETF equivalenti
-            - Verifica simboli su [Yahoo Finance](https://finance.yahoo.com)
-            """)
-            return
+    # Calculate equal weights if not set
+    weights = st.session_state.get("pf_weights", {})
+    if not weights or set(weights.keys()) != set(symbols):
+        weights = {s: 1/len(symbols) for s in symbols}
+        st.session_state["pf_weights"] = weights
 
-        st.session_state["pf_prices_loaded"] = True
+    # ══════════════════════════════════════════════════════════════════
+    # 📈 SECTION 1: PORTFOLIO COMPOSITION
+    # ══════════════════════════════════════════════════════════════════
 
-        # Performance normalizzata
-        norm = (prices_df / prices_df.iloc[0]) * 100
-        fig = line_chart(norm, title="Performance Normalizzata (Base 100)", normalize=False, height=320)
-        fig.update_layout(paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(255,255,255,0.85)")
-        st.plotly_chart(fig, width="stretch", config={"displayModeBar": False})
+    st.markdown('<h2 class="section-header-dark">📊 Composizione Portfolio</h2>', unsafe_allow_html=True)
 
-        # Matrice correlazione
-        if len(prices_df.columns) >= 2:
-            corr = prices_df.pct_change().dropna().corr()
-            fig_corr = heatmap_correlation(corr, height=300)
-            fig_corr.update_layout(paper_bgcolor="rgba(0,0,0,0)")
-            st.plotly_chart(fig_corr, width="stretch", config={"displayModeBar": False})
+    col_pie, col_table = st.columns([1, 2])
 
-        # ── Ottimizzazione ────────────────────────────────────────────────────
-        if optimize and len(prices_df.columns) >= 2:
+    with col_pie:
+        # Pie chart
+        labels = list(weights.keys())
+        values = [w * 100 for w in weights.values()]
+        fig_pie = pie_chart(labels, values, title="Asset Allocation", height=350)
+        fig_pie.update_layout(
+            paper_bgcolor="rgba(0,0,0,0)",
+            plot_bgcolor="rgba(0,0,0,0)",
+            font=dict(color="#E5E7EB")
+        )
+        st.plotly_chart(fig_pie, use_container_width=True, config={"displayModeBar": False})
+
+    with col_table:
+        # Composition table
+        st.markdown('<div class="composition-table">', unsafe_allow_html=True)
+
+        table_html = """
+        <table>
+            <thead>
+                <tr>
+                    <th>Asset</th>
+                    <th>Peso</th>
+                    <th>Allocazione Visiva</th>
+                </tr>
+            </thead>
+            <tbody>
+        """
+
+        for symbol, weight in weights.items():
+            weight_pct = f"{weight*100:.1f}%"
+            table_html += f"""
+                <tr>
+                    <td><b>{symbol}</b></td>
+                    <td><b>{weight_pct}</b></td>
+                    <td>
+                        <div class="weight-bar">
+                            <div class="weight-bar-fill" style="width:{weight*100}%;"></div>
+                        </div>
+                    </td>
+                </tr>
+            """
+
+        table_html += """
+            </tbody>
+        </table>
+        """
+
+        st.markdown(table_html, unsafe_allow_html=True)
+        st.markdown('</div>', unsafe_allow_html=True)
+
+    # ══════════════════════════════════════════════════════════════════
+    # 📈 SECTION 2: PERFORMANCE & CORRELATION
+    # ══════════════════════════════════════════════════════════════════
+
+    st.markdown('<h2 class="section-header-dark">📈 Performance & Correlazione</h2>', unsafe_allow_html=True)
+
+    # Normalized performance
+    norm = (prices_df / prices_df.iloc[0]) * 100
+    fig_perf = line_chart(norm, title="Performance Normalizzata (Base 100)", normalize=False, height=400)
+    fig_perf.update_layout(
+        paper_bgcolor="rgba(0,0,0,0)",
+        plot_bgcolor="rgba(30,41,59,0.5)",
+        font=dict(color="#E5E7EB")
+    )
+    st.plotly_chart(fig_perf, use_container_width=True, config={"displayModeBar": False})
+
+    # Correlation matrix
+    if len(prices_df.columns) >= 2:
+        st.markdown("**Matrice di Correlazione:**")
+        corr = prices_df.pct_change().dropna().corr()
+        fig_corr = heatmap_correlation(corr, height=400)
+        fig_corr.update_layout(
+            paper_bgcolor="rgba(0,0,0,0)",
+            plot_bgcolor="rgba(0,0,0,0)",
+            font=dict(color="#E5E7EB")
+        )
+        st.plotly_chart(fig_corr, use_container_width=True, config={"displayModeBar": False})
+
+    # ══════════════════════════════════════════════════════════════════
+    # 🎯 SECTION 3: AUTOMATIC BACKTEST (based on selected period)
+    # ══════════════════════════════════════════════════════════════════
+
+    st.markdown('<h2 class="section-header-dark">🎯 Backtest Automatico</h2>', unsafe_allow_html=True)
+
+    st.markdown(f'<span class="status-badge info">Periodo: {period_sel}</span>', unsafe_allow_html=True)
+    st.markdown("<br>", unsafe_allow_html=True)
+
+    try:
+        from backend.analyzers.backtest import BacktestEngine
+
+        with st.spinner("⏳ Esecuzione backtest..."):
+            # Calculate backtest period based on selection
+            end_date = prices_df.index[-1]
+            if period_sel == "1y":
+                start_date = end_date - pd.DateOffset(years=1)
+            elif period_sel == "2y":
+                start_date = end_date - pd.DateOffset(years=2)
+            elif period_sel == "3y":
+                start_date = end_date - pd.DateOffset(years=3)
+            elif period_sel == "5y":
+                start_date = end_date - pd.DateOffset(years=5)
+            elif period_sel == "10y":
+                start_date = end_date - pd.DateOffset(years=10)
+            else:  # max
+                start_date = prices_df.index[0]
+
+            engine = BacktestEngine(prices_df)
+            backtest_results = engine.backtest_portfolio(
+                weights=weights,
+                start_date=start_date.strftime("%Y-%m-%d"),
+                end_date=end_date.strftime("%Y-%m-%d"),
+                initial_value=10000.0,
+            )
+
+        # Metrics grid
+        m1, m2, m3, m4 = st.columns(4)
+
+        total_ret = backtest_results.get('total_return', 0)
+        sharpe = backtest_results.get('sharpe_ratio', 0)
+        max_dd = backtest_results.get('max_drawdown', 0)
+        ann_ret = backtest_results.get('annual_return', 0)
+
+        with m1:
+            trend = "positive" if total_ret >= 0 else "negative"
+            card = _create_metric_card("Rendimento Totale", f"{total_ret*100:+.1f}%", trend)
+            st.markdown(card, unsafe_allow_html=True)
+
+        with m2:
+            card = _create_metric_card("Sharpe Ratio", f"{sharpe:.2f}", "gold")
+            st.markdown(card, unsafe_allow_html=True)
+
+        with m3:
+            card = _create_metric_card("Max Drawdown", f"{max_dd*100:.1f}%", "negative")
+            st.markdown(card, unsafe_allow_html=True)
+
+        with m4:
+            trend = "positive" if ann_ret >= 0 else "negative"
+            card = _create_metric_card("Rendimento Annuo", f"{ann_ret*100:+.1f}%", trend)
+            st.markdown(card, unsafe_allow_html=True)
+
+        # Backtest chart
+        portfolio_value = backtest_results.get('portfolio_value')
+        if portfolio_value is not None and len(portfolio_value) > 0:
             st.markdown("<br>", unsafe_allow_html=True)
-            st.subheader("🎯 Ottimizzazione Markowitz")
+            fig_bt = line_chart(
+                pd.DataFrame({'Portafoglio': portfolio_value}),
+                title=f"Andamento Portafoglio ({period_sel})",
+                height=400
+            )
+            fig_bt.update_layout(
+                paper_bgcolor="rgba(0,0,0,0)",
+                plot_bgcolor="rgba(30,41,59,0.5)",
+                font=dict(color="#E5E7EB")
+            )
+            st.plotly_chart(fig_bt, use_container_width=True, config={"displayModeBar": False})
 
-            opt_type = st.selectbox("Strategia", [
-                "Massimizza Sharpe Ratio",
-                "Minimizza Volatilità",
-            ])
-
-            with st.spinner("Ottimizzazione in corso..."):
-                try:
-                    optimizer = PortfolioOptimizer(prices_df)
-                    optimizer.calculate_expected_returns()
-                    optimizer.calculate_covariance_matrix()
-
-                    if "Sharpe" in opt_type:
-                        result = optimizer.optimize_max_sharpe()
-                    else:
-                        result = optimizer.optimize_min_volatility()
-
-                    weights_opt = result["weights"]
-                    exp_ret = result["expected_return"]
-                    vol     = result["volatility"]
-                    sharpe  = result["sharpe_ratio"]
-
-                    # ── Metriche ──────────────────────────────────────────────
-                    m1, m2, m3 = st.columns(3)
-                    with m1:
-                        st.metric("Rendimento Atteso", f"{exp_ret*100:.2f}%")
-                    with m2:
-                        st.metric("Volatilità", f"{vol*100:.2f}%")
-                    with m3:
-                        st.metric("Sharpe Ratio", f"{sharpe:.2f}")
-
-                    # ── Pesi ottimali ─────────────────────────────────────────
-                    col_pie, col_weights = st.columns(2)
-
-                    with col_pie:
-                        labels = [k for k, v in weights_opt.items() if v > 0.01]
-                        values = [v * 100 for v in weights_opt.values() if v > 0.01]
-                        fig_pie = pie_chart(labels, values, title="Allocazione Ottimale", height=300)
-                        fig_pie.update_layout(paper_bgcolor="rgba(0,0,0,0)")
-                        st.plotly_chart(fig_pie, width="stretch", config={"displayModeBar": False})
-
-                    with col_weights:
-                        st.markdown("**Pesi Ottimali:**")
-                        rows_w = "".join([f"""
-                        <tr>
-                            <td style="font-weight:600;">{sym}</td>
-                            <td>{chip(f'{w*100:.1f}%', 'blue')}</td>
-                            <td>
-                                <div style="background:#e5eef8;border-radius:8px;height:10px;width:100%;overflow:hidden;">
-                                    <div style="background:#2471c8;height:10px;width:{w*100:.0f}%;border-radius:8px;"></div>
-                                </div>
-                            </td>
-                        </tr>
-                        """ for sym, w in weights_opt.items() if w > 0.01])
-                        st.markdown(f"""
-                        <div class="fin-card" style="padding:0;overflow:hidden;">
-                        <table class="fin-table"><thead><tr>
-                            <th>Simbolo</th><th>Peso</th><th>Barra</th>
-                        </tr></thead><tbody>{rows_w}</tbody></table></div>
-                        """, unsafe_allow_html=True)
-
-                    # ── Frontiera Efficiente ──────────────────────────────────
-                    with st.spinner("Calcolo frontiera efficiente..."):
-                        vols_ef, rets_ef = optimizer.calculate_efficient_frontier(points=40)
-
-                    if vols_ef and rets_ef:
-                        asset_vols = [float(np.sqrt(optimizer.S.loc[s, s])) for s in optimizer.symbols]
-                        asset_rets = [float(optimizer.mu[s]) for s in optimizer.symbols]
-                        fig_ef = efficient_frontier_chart(
-                            vols_ef, rets_ef,
-                            vol, exp_ret,
-                            optimizer.symbols, asset_vols, asset_rets,
-                            height=420,
-                        )
-                        fig_ef.update_layout(paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(255,255,255,0.85)")
-                        st.plotly_chart(fig_ef, width="stretch", config={"displayModeBar": False})
-
-                    # Salva pesi ottimali
-                    st.session_state["pf_weights"] = weights_opt
-
-                except Exception as e:
-                    st.error(f"❌ Errore ottimizzazione: {e}")
-
-    # ── HTML Report Generation (Print-to-PDF) ─────────────────────────────────
-    if generate_pdf:
+        # Additional metrics
         st.markdown("<br>", unsafe_allow_html=True)
-        st.markdown("### 📄 Generazione Report HTML")
+        col1, col2, col3 = st.columns(3)
 
-        st.info("💡 **Nuovo sistema semplificato:** Genera un report HTML professionale che puoi stampare come PDF dal browser (File → Stampa → Salva come PDF)")
+        with col1:
+            vol = backtest_results.get('annual_volatility', 0)
+            card = _create_metric_card("Volatilità Annua", f"{vol*100:.1f}%", "info")
+            st.markdown(card, unsafe_allow_html=True)
 
-        # Collect data
-        portfolio_name = st.text_input(
-            "Nome Portafoglio",
-            value=f"Portfolio-{datetime.now().strftime('%Y%m%d')}",
-            key="pdf_portfolio_name"
-        )
+        with col2:
+            win_rate = backtest_results.get('win_rate', 0)
+            trend = "positive" if win_rate >= 0.5 else "warning"
+            card = _create_metric_card("Win Rate", f"{win_rate*100:.0f}%", trend)
+            st.markdown(card, unsafe_allow_html=True)
 
-        initial_value = st.number_input(
-            "Capitale Iniziale (€)",
-            min_value=1000.0,
-            max_value=10_000_000.0,
-            value=10000.0,
-            step=1000.0,
-            key="pdf_initial_value"
-        )
+        with col3:
+            final_value = backtest_results.get('final_value', 10000)
+            profit = final_value - 10000
+            trend = "positive" if profit >= 0 else "negative"
+            card = _create_metric_card("P&L (su 10k€)", f"{profit:+,.0f}€", trend)
+            st.markdown(card, unsafe_allow_html=True)
 
-        include_backtest = st.checkbox("Includi Backtest", value=False, key="pdf_backtest")
-        include_predictions = st.checkbox("Includi Predizioni", value=False, key="pdf_predictions")
+        st.markdown('<span class="status-badge success">✅ Backtest completato</span>', unsafe_allow_html=True)
 
-        if st.button("📄 Genera Report HTML", type="primary", width="stretch"):
+    except Exception as e:
+        st.warning(f"⚠️ Backtest non disponibile: {e}")
+
+    # ══════════════════════════════════════════════════════════════════
+    # 🔮 SECTION 4: PREDICTIONS (Optional)
+    # ══════════════════════════════════════════════════════════════════
+
+    st.markdown('<h2 class="section-header-dark">🔮 Predizioni (Opzionale)</h2>', unsafe_allow_html=True)
+
+    run_predictions = st.checkbox("🔮 **Calcola predizioni a 6 mesi (Monte Carlo)**", value=False)
+
+    if run_predictions:
+        try:
+            from backend.models.predictor import PortfolioPredictor
+
+            with st.spinner("⏳ Calcolo predizioni (1000 simulazioni)..."):
+                predictor = PortfolioPredictor(prices_df)
+                scenarios = predictor.predict_portfolio_scenarios(
+                    weights=weights,
+                    months=6,
+                    initial_value=10000.0,
+                    num_simulations=1000,
+                )
+
+            # Scenarios metrics
+            col1, col2, col3 = st.columns(3)
+
+            if 'best_scenario' in scenarios:
+                s = scenarios['best_scenario']
+                with col1:
+                    card = _create_metric_card(
+                        "Scenario Migliore (95%)",
+                        f"{s['final_value']:,.0f}€",
+                        "positive"
+                    )
+                    st.markdown(card, unsafe_allow_html=True)
+                    st.markdown(
+                        f'<div style="text-align:center;color:#10B981;font-size:0.9rem;margin-top:8px;">+{s["return_percentage"]:.1f}%</div>',
+                        unsafe_allow_html=True
+                    )
+
+            if 'normal_scenario' in scenarios:
+                s = scenarios['normal_scenario']
+                with col2:
+                    card = _create_metric_card(
+                        "Scenario Atteso (50%)",
+                        f"{s['final_value']:,.0f}€",
+                        "gold"
+                    )
+                    st.markdown(card, unsafe_allow_html=True)
+                    color = "#10B981" if s['return_percentage'] >= 0 else "#EF4444"
+                    sign = "+" if s['return_percentage'] >= 0 else ""
+                    st.markdown(
+                        f'<div style="text-align:center;color:{color};font-size:0.9rem;margin-top:8px;">{sign}{s["return_percentage"]:.1f}%</div>',
+                        unsafe_allow_html=True
+                    )
+
+            if 'worst_scenario' in scenarios:
+                s = scenarios['worst_scenario']
+                with col3:
+                    card = _create_metric_card(
+                        "Scenario Peggiore (5%)",
+                        f"{s['final_value']:,.0f}€",
+                        "negative"
+                    )
+                    st.markdown(card, unsafe_allow_html=True)
+                    st.markdown(
+                        f'<div style="text-align:center;color:#EF4444;font-size:0.9rem;margin-top:8px;">{s["return_percentage"]:.1f}%</div>',
+                        unsafe_allow_html=True
+                    )
+
+            st.markdown('<span class="status-badge success">✅ Predizioni completate</span>', unsafe_allow_html=True)
+
+        except Exception as e:
+            st.warning(f"⚠️ Predizioni non disponibili: {e}")
+
+    # ══════════════════════════════════════════════════════════════════
+    # 📄 SECTION 5: PDF EXPORT (Optional)
+    # ══════════════════════════════════════════════════════════════════
+
+    st.markdown("<br><br>", unsafe_allow_html=True)
+    st.divider()
+
+    st.markdown("### 📄 Genera Report PDF")
+
+    col1, col2, col3 = st.columns([1, 1, 1])
+
+    with col2:
+        if st.button("📥 Scarica Report HTML", type="primary", use_container_width=True):
             try:
                 from backend.reports.html_report_generator import generate_html_report
 
-                st.info("✅ Generazione report HTML...")
-
-                # Normalize weights
-                weights = st.session_state.get("pf_weights", {})
-                if not weights or set(weights.keys()) != set(symbols):
-                    weights = {s: 1/len(symbols) for s in symbols}
-                total_w = sum(weights.values())
-                weights_clean = {s: w/total_w for s, w in weights.items()}
-
-                # Load prices for charts
-                prices_df = _load_prices(symbols, period="1y")
-
-                # Performance chart
-                performance_chart = None
-                correlation_chart = None
-                if not prices_df.empty:
-                    # Normalized performance
-                    norm = (prices_df / prices_df.iloc[0]) * 100
-                    performance_chart = line_chart(norm, title="Performance Normalizzata (Base 100)", normalize=False, height=400)
-
-                    # Correlation
-                    if len(prices_df.columns) >= 2:
-                        corr = prices_df.pct_change().dropna().corr()
-                        correlation_chart = heatmap_correlation(corr, height=500)
-
-                # Backtest (optional)
-                backtest_results = None
-                backtest_chart = None
-                if include_backtest:
-                    st.info("⏳ Esecuzione backtest...")
-                    try:
-                        from backend.analyzers.backtest import BacktestEngine
-                        if not prices_df.empty:
-                            engine = BacktestEngine(prices_df)
-                            backtest_results = engine.backtest_portfolio(
-                                weights=weights_clean,
-                                start_date=(prices_df.index[-1] - pd.DateOffset(years=1)).strftime("%Y-%m-%d"),
-                                end_date=prices_df.index[-1].strftime("%Y-%m-%d"),
-                                initial_value=initial_value,
-                            )
-                            # Create backtest chart
-                            portfolio_value = backtest_results.get('portfolio_value')
-                            if portfolio_value is not None:
-                                backtest_chart = line_chart(
-                                    pd.DataFrame({'Portafoglio': portfolio_value}),
-                                    title="Valore Portafoglio",
-                                    height=400
-                                )
-                            st.success("✅ Backtest completato")
-                    except Exception as e:
-                        st.warning(f"⚠️ Backtest non disponibile: {e}")
-
-                # Predictions (optional)
-                prediction_results = None
-                prediction_chart = None
-                if include_predictions:
-                    st.info("⏳ Calcolo predizioni...")
-                    try:
-                        from backend.models.predictor import PortfolioPredictor
-                        if not prices_df.empty:
-                            predictor = PortfolioPredictor(prices_df)
-                            scenarios = predictor.predict_portfolio_scenarios(
-                                weights=weights_clean,
-                                months=6,
-                                initial_value=initial_value,
-                                num_simulations=1000,  # Ridotto per velocità
-                            )
-                            prediction_results = {"scenarios": scenarios}
-
-                            # Create prediction chart (if available)
-                            # This would need the prediction chart data
-                            st.success("✅ Predizioni completate")
-                    except Exception as e:
-                        st.warning(f"⚠️ Predizioni non disponibili: {e}")
-
-                # Generate HTML
-                st.info("📝 Generazione HTML...")
-                html_content = generate_html_report(
-                    portfolio_name=portfolio_name,
-                    symbols=symbols,
-                    weights=weights_clean,
-                    initial_value=initial_value,
-                    performance_chart=performance_chart,
-                    correlation_chart=correlation_chart,
-                    backtest_chart=backtest_chart,
-                    prediction_chart=prediction_chart,
-                    backtest_results=backtest_results,
-                    prediction_results=prediction_results,
-                )
-
-                # Genera filename
-                filename = f"{portfolio_name.replace(' ', '_')}_{datetime.now().strftime('%Y%m%d_%H%M')}.html"
-
-                st.success("✅ Report HTML generato con successo!")
-                st.balloons()
-
-                # ══════════════════════════════════════════════════════════════
-                # 📥 DOWNLOAD IMMEDIATO (no rerun needed!)
-                # ══════════════════════════════════════════════════════════════
-                st.markdown("<br>", unsafe_allow_html=True)
-                st.success("🎉 **Report Pronto!** Scarica il file HTML e aprilo nel browser, poi usa **File → Stampa → Salva come PDF**")
-
-                col1, col2, col3 = st.columns([1, 2, 1])
-                with col2:
-                    st.download_button(
-                        label="📥 Scarica Report HTML",
-                        data=html_content,
-                        file_name=filename,
-                        mime="text/html",
-                        type="primary",
-                        width="stretch",
+                with st.spinner("📝 Generazione report..."):
+                    # Generate HTML report
+                    html_content = generate_html_report(
+                        portfolio_name=f"Portfolio_{datetime.now().strftime('%Y%m%d')}",
+                        symbols=symbols,
+                        weights=weights,
+                        initial_value=10000.0,
+                        performance_chart=fig_perf if 'fig_perf' in locals() else None,
+                        correlation_chart=fig_corr if 'fig_corr' in locals() else None,
+                        backtest_chart=fig_bt if 'fig_bt' in locals() else None,
+                        backtest_results=backtest_results if 'backtest_results' in locals() else None,
                     )
 
-                st.info("""
-                **📖 Come salvare come PDF:**
-                1. Scarica il file HTML
-                2. Aprilo nel browser (Chrome/Edge/Firefox)
-                3. Premi **Ctrl+P** (o Cmd+P su Mac)
-                4. Seleziona **"Salva come PDF"** come stampante
-                5. Click **Salva**
+                    filename = f"Portfolio_{datetime.now().strftime('%Y%m%d_%H%M')}.html"
 
-                Il report è ottimizzato per la stampa con layout professionale!
-                """)
+                st.success("✅ Report generato!")
+
+                # Download button
+                st.download_button(
+                    label="📥 Download HTML Report",
+                    data=html_content,
+                    file_name=filename,
+                    mime="text/html",
+                    type="primary",
+                    use_container_width=True,
+                )
+
+                st.info("**📖 Apri il file HTML nel browser e usa Ctrl+P → Salva come PDF**")
 
             except Exception as e:
-                st.error(f"❌ Errore generazione report: {e}")
+                st.error(f"❌ Errore: {e}")
                 import traceback
                 st.code(traceback.format_exc())
