@@ -8,13 +8,13 @@ MAIN_CSS = """
 /* ===== GOOGLE FONTS ===== */
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
 
-/* ===== ROOT VARIABLES ===== */
+/* ===== ROOT VARIABLES (DARK THEME) ===== */
 :root {
-    --bg-primary: #dce8f5;
-    --bg-secondary: #c8d9ed;
-    --card-bg: #ffffff;
-    --card-shadow: 0 4px 24px rgba(30,80,160,0.10);
-    --card-shadow-hover: 0 8px 32px rgba(30,80,160,0.18);
+    --bg-primary: #0A1628;
+    --bg-secondary: #1E293B;
+    --card-bg: #1E293B;
+    --card-shadow: 0 4px 24px rgba(0,0,0,0.30);
+    --card-shadow-hover: 0 8px 32px rgba(0,0,0,0.40);
     --card-radius: 20px;
     --badge-radius: 50px;
     --blue-dark: #1a4f8a;
@@ -25,10 +25,10 @@ MAIN_CSS = """
     --red:       #ef4444;
     --orange:    #f59e0b;
     --purple:    #8b5cf6;
-    --text-dark: #0f1c2e;
-    --text-mid:  #374151;
-    --text-light: #6b7280;
-    --border:    #e2eaf4;
+    --text-dark: #FFFFFF;
+    --text-mid:  #E5E7EB;
+    --text-light: #9CA3AF;
+    --border:    #334155;
 }
 
 /* ===== GLOBAL ===== */
@@ -42,20 +42,48 @@ html, body, [class*="css"] {
 }
 
 /* ===== DARK THEME TEXT COLORS ===== */
+/* Force ALL text to be white/light on dark background */
+
+/* Headers - white */
 .main h1, .main h2, .main h3, .main h4, .main h5, .main h6 {
     color: #FFFFFF !important;
 }
 
-.main p, .main span, .main label, .main div {
+/* All text elements - light gray */
+.main p, .main span, .main label, .main div, .main li, .main a {
     color: #E5E7EB !important;
 }
 
-/* Streamlit widgets text */
-.stTextInput label, .stSelectbox label, .stCheckbox label, .stRadio label {
+/* Streamlit markdown containers */
+.main [data-testid="stMarkdownContainer"] h1,
+.main [data-testid="stMarkdownContainer"] h2,
+.main [data-testid="stMarkdownContainer"] h3 {
+    color: #FFFFFF !important;
+}
+
+.main [data-testid="stMarkdownContainer"] p,
+.main [data-testid="stMarkdownContainer"] span,
+.main [data-testid="stMarkdownContainer"] div {
     color: #E5E7EB !important;
 }
 
-.stTextInput input {
+/* Streamlit widgets labels */
+.stTextInput label,
+.stSelectbox label,
+.stCheckbox label,
+.stRadio label,
+.stNumberInput label,
+.stTextArea label,
+.stDateInput label,
+.stTimeInput label {
+    color: #E5E7EB !important;
+    font-weight: 500 !important;
+}
+
+/* Input fields - white background with dark text */
+.stTextInput input,
+.stNumberInput input,
+.stTextArea textarea {
     color: #0A1628 !important;
     background: #FFFFFF !important;
 }
@@ -66,8 +94,33 @@ html, body, [class*="css"] {
 }
 
 /* Markdown text */
-.main .stMarkdown, .main .stMarkdown p, .main .stMarkdown span {
+.main .stMarkdown,
+.main .stMarkdown p,
+.main .stMarkdown span,
+.main .stMarkdown div,
+.main .stMarkdown li {
     color: #E5E7EB !important;
+}
+
+/* Tabs */
+.stTabs [data-baseweb="tab"] {
+    color: #9CA3AF !important;
+}
+
+.stTabs [data-baseweb="tab"][aria-selected="true"] {
+    color: #FFFFFF !important;
+}
+
+/* Buttons text (keep primary button readable) */
+button[kind="primary"] {
+    background: #2471c8 !important;
+    color: #FFFFFF !important;
+}
+
+/* Info/warning/success boxes (keep dark text on colored bg) */
+.main [data-testid="stAlert"] p,
+.main [data-testid="stAlert"] span {
+    color: #0A1628 !important;
 }
 
 /* Keep Streamlit header visible for sidebar toggle */
