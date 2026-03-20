@@ -388,48 +388,41 @@ def render():
                     prediction_results=prediction_results,
                 )
 
-                # Save to session state
+                # Genera filename
                 filename = f"{portfolio_name.replace(' ', '_')}_{datetime.now().strftime('%Y%m%d_%H%M')}.html"
-                st.session_state["html_data"] = html_content
-                st.session_state["html_filename"] = filename
-                st.session_state["html_ready"] = True
 
                 st.success("✅ Report HTML generato con successo!")
                 st.balloons()
-                st.rerun()
+
+                # ══════════════════════════════════════════════════════════════
+                # 📥 DOWNLOAD IMMEDIATO (no rerun needed!)
+                # ══════════════════════════════════════════════════════════════
+                st.markdown("<br>", unsafe_allow_html=True)
+                st.success("🎉 **Report Pronto!** Scarica il file HTML e aprilo nel browser, poi usa **File → Stampa → Salva come PDF**")
+
+                col1, col2, col3 = st.columns([1, 2, 1])
+                with col2:
+                    st.download_button(
+                        label="📥 Scarica Report HTML",
+                        data=html_content,
+                        file_name=filename,
+                        mime="text/html",
+                        type="primary",
+                        width="stretch",
+                    )
+
+                st.info("""
+                **📖 Come salvare come PDF:**
+                1. Scarica il file HTML
+                2. Aprilo nel browser (Chrome/Edge/Firefox)
+                3. Premi **Ctrl+P** (o Cmd+P su Mac)
+                4. Seleziona **"Salva come PDF"** come stampante
+                5. Click **Salva**
+
+                Il report è ottimizzato per la stampa con layout professionale!
+                """)
 
             except Exception as e:
                 st.error(f"❌ Errore generazione report: {e}")
                 import traceback
                 st.code(traceback.format_exc())
-
-        # Show download button if HTML is ready
-        if st.session_state.get("html_ready", False):
-            st.markdown("<br>", unsafe_allow_html=True)
-
-            st.success("🎉 **Report Pronto!** Scarica il file HTML e aprilo nel browser, poi usa **File → Stampa → Salva come PDF**")
-
-            col1, col2, col3 = st.columns([1, 2, 1])
-            with col2:
-                st.download_button(
-                    label="📥 Scarica Report HTML",
-                    data=st.session_state["html_data"],
-                    file_name=st.session_state["html_filename"],
-                    mime="text/html",
-                    type="primary",
-                    width="stretch",
-                )
-
-            st.info("""
-            **📖 Come salvare come PDF:**
-            1. Scarica il file HTML
-            2. Aprilo nel browser (Chrome/Edge/Firefox)
-            3. Premi **Ctrl+P** (o Cmd+P su Mac)
-            4. Seleziona **"Salva come PDF"** come stampante
-            5. Click **Salva**
-            """)
-
-            # Reset button
-            if st.button("🔄 Genera Nuovo Report", width="stretch"):
-                st.session_state["html_ready"] = False
-                st.rerun()
