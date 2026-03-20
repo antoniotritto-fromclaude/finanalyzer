@@ -58,7 +58,7 @@ def render():
         rebal = st.selectbox("Ribilanciamento", ["Nessuno","Mensile","Trimestrale","Annuale"])
         rebal_map = {"Nessuno": None, "Mensile": "monthly", "Trimestrale": "quarterly", "Annuale": "yearly"}
 
-    if st.button("▶️ Esegui Backtest", type="primary", use_container_width=True):
+    if st.button("▶️ Esegui Backtest", type="primary", width="stretch"):
         if not periods:
             st.warning("Seleziona almeno un periodo.")
             return
@@ -160,7 +160,7 @@ def render():
                 fig.update_layout(paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(255,255,255,0.85)")
                 fig.add_hline(y=initial_value, line_dash="dot", line_color="#9ca3af",
                               annotation_text=f"Investimento iniziale: {format_currency_eur(initial_value, decimals=0)}")
-                st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": False})
+                st.plotly_chart(fig, width="stretch", config={"displayModeBar": False})
 
                 # ── Grafico componenti individuali ────────────────────────────────────
                 st.markdown("<br>", unsafe_allow_html=True)
@@ -196,7 +196,7 @@ def render():
                                         title=f"Contributo Individuale di Ogni Strumento – {years} Anno/i",
                                         y_title="Valore (€)", height=300)
                     fig_ind.update_layout(paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(255,255,255,0.85)")
-                    st.plotly_chart(fig_ind, use_container_width=True, config={"displayModeBar": False})
+                    st.plotly_chart(fig_ind, width="stretch", config={"displayModeBar": False})
 
                     # Tabella performance individuali
                     st.markdown("**Performance Individuali:**")
@@ -217,14 +217,14 @@ def render():
                             })
 
                     perf_table = pd.DataFrame(perf_rows)
-                    st.dataframe(perf_table, use_container_width=True, hide_index=True)
+                    st.dataframe(perf_table, width="stretch", hide_index=True)
                 else:
                     st.warning("⚠️ Dati insufficienti per calcolare le performance individuali")
 
                 # Drawdown
                 fig_dd = drawdown_chart(pv, height=200)
                 fig_dd.update_layout(paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(255,255,255,0.85)")
-                st.plotly_chart(fig_dd, use_container_width=True, config={"displayModeBar": False})
+                st.plotly_chart(fig_dd, width="stretch", config={"displayModeBar": False})
 
             except Exception as e:
                 st.error(f"Backtest {years}y fallito: {e}")

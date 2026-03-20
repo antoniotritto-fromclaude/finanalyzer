@@ -221,7 +221,7 @@ def render():
                             tickformat=",.0f"
                         ),
                     )
-                    st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": False})
+                    st.plotly_chart(fig, width="stretch", config={"displayModeBar": False})
 
     st.markdown("<br>", unsafe_allow_html=True)
 
@@ -233,7 +233,7 @@ def render():
     fig2 = bar_chart(values, sectors, title="", colors=colors, horizontal=True, height=300)
     fig2.update_traces(texttemplate=[f"{v:+.1f}%" for v in values], textposition="outside")
     fig2.update_layout(paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(255,255,255,0.85)")
-    st.plotly_chart(fig2, use_container_width=True, config={"displayModeBar": False})
+    st.plotly_chart(fig2, width="stretch", config={"displayModeBar": False})
 
     st.markdown("<br>", unsafe_allow_html=True)
 
@@ -247,7 +247,7 @@ def render():
     # Display con st.dataframe nativo (NO HTML ESCAPE!)
     st.dataframe(
         df_movers,
-        use_container_width=True,
+        width="stretch",
         hide_index=False,
         column_config={
             "name": st.column_config.TextColumn("Titolo", width="medium"),

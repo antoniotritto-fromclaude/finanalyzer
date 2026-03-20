@@ -54,7 +54,7 @@ def render():
     with c3:
         n_sims = st.select_slider("Simulazioni Monte Carlo", [1000, 5000, 10000, 25000], value=10000)
 
-    if st.button("🔮 Genera Scenari", type="primary", use_container_width=True):
+    if st.button("🔮 Genera Scenari", type="primary", width="stretch"):
         with st.spinner("Caricamento dati storici..."):
             prices_df = _load_prices(symbols, period="3y")
 
@@ -160,7 +160,7 @@ def render():
                 height=380,
             )
             fig_pred.update_layout(paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(255,255,255,0.85)")
-            st.plotly_chart(fig_pred, use_container_width=True, config={"displayModeBar": False})
+            st.plotly_chart(fig_pred, width="stretch", config={"displayModeBar": False})
 
         # ── Statistiche ───────────────────────────────────────────────────────
         st.markdown("<br>", unsafe_allow_html=True)

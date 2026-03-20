@@ -61,7 +61,7 @@ def render():
         )
     with col_b:
         st.markdown("<br>", unsafe_allow_html=True)
-        add_clicked = st.button("➕ Aggiungi", use_container_width=True, type="primary")
+        add_clicked = st.button("➕ Aggiungi", width="stretch", type="primary")
 
     # Gestione aggiunta simbolo
     if add_clicked and new_sym:
@@ -97,7 +97,7 @@ def render():
         }
         for col, (name, syms) in zip(pre_cols, presets.items()):
             with col:
-                if st.button(name, use_container_width=True, key=f"preset_{name}"):
+                if st.button(name, width="stretch", key=f"preset_{name}"):
                     st.session_state["pf_symbols"] = syms.copy()
                     st.success(f"✅ Caricato: {name}")
                     time.sleep(0.5)
@@ -140,11 +140,11 @@ def render():
     act_cols = st.columns(3)
 
     with act_cols[0]:
-        show_data = st.button("📈 Visualizza Storico", use_container_width=True)
+        show_data = st.button("📈 Visualizza Storico", width="stretch")
     with act_cols[1]:
-        optimize = st.button("🎯 Ottimizza Markowitz", type="primary", use_container_width=True)
+        optimize = st.button("🎯 Ottimizza Markowitz", type="primary", width="stretch")
     with act_cols[2]:
-        generate_pdf = st.button("📄 Genera Report PDF", use_container_width=True)
+        generate_pdf = st.button("📄 Genera Report PDF", width="stretch")
 
     # ── Carica prezzi ─────────────────────────────────────────────────────────
     if show_data or optimize or st.session_state.get("pf_prices_loaded"):
@@ -172,14 +172,14 @@ def render():
         norm = (prices_df / prices_df.iloc[0]) * 100
         fig = line_chart(norm, title="Performance Normalizzata (Base 100)", normalize=False, height=320)
         fig.update_layout(paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(255,255,255,0.85)")
-        st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": False})
+        st.plotly_chart(fig, width="stretch", config={"displayModeBar": False})
 
         # Matrice correlazione
         if len(prices_df.columns) >= 2:
             corr = prices_df.pct_change().dropna().corr()
             fig_corr = heatmap_correlation(corr, height=300)
             fig_corr.update_layout(paper_bgcolor="rgba(0,0,0,0)")
-            st.plotly_chart(fig_corr, use_container_width=True, config={"displayModeBar": False})
+            st.plotly_chart(fig_corr, width="stretch", config={"displayModeBar": False})
 
         # ── Ottimizzazione ────────────────────────────────────────────────────
         if optimize and len(prices_df.columns) >= 2:
@@ -224,7 +224,7 @@ def render():
                         values = [v * 100 for v in weights_opt.values() if v > 0.01]
                         fig_pie = pie_chart(labels, values, title="Allocazione Ottimale", height=300)
                         fig_pie.update_layout(paper_bgcolor="rgba(0,0,0,0)")
-                        st.plotly_chart(fig_pie, use_container_width=True, config={"displayModeBar": False})
+                        st.plotly_chart(fig_pie, width="stretch", config={"displayModeBar": False})
 
                     with col_weights:
                         st.markdown("**Pesi Ottimali:**")
@@ -260,7 +260,7 @@ def render():
                             height=420,
                         )
                         fig_ef.update_layout(paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(255,255,255,0.85)")
-                        st.plotly_chart(fig_ef, use_container_width=True, config={"displayModeBar": False})
+                        st.plotly_chart(fig_ef, width="stretch", config={"displayModeBar": False})
 
                     # Salva pesi ottimali
                     st.session_state["pf_weights"] = weights_opt
@@ -292,7 +292,7 @@ def render():
         include_backtest = st.checkbox("Includi Backtest", value=True, key="pdf_backtest")
         include_predictions = st.checkbox("Includi Predizioni", value=True, key="pdf_predictions")
 
-        if st.button("⬇️ Genera Report PDF", type="primary", use_container_width=True):
+        if st.button("⬇️ Genera Report PDF", type="primary", width="stretch"):
             try:
                 # Step 1: Check dependencies
                 with st.spinner("📦 Verifica dipendenze..."):
@@ -419,10 +419,10 @@ def render():
                     file_name=st.session_state["pdf_filename"],
                     mime="application/pdf",
                     type="primary",
-                    use_container_width=True,
+                    width="stretch",
                 )
 
             # Reset button
-            if st.button("🔄 Genera Nuovo Report", use_container_width=True):
+            if st.button("🔄 Genera Nuovo Report", width="stretch"):
                 st.session_state["pdf_ready"] = False
                 st.rerun()

@@ -35,7 +35,15 @@ def line_chart(
             fillcolor=f"rgba({int(color[1:3],16)},{int(color[3:5],16)},{int(color[5:7],16)},0.08)",
             hovertemplate=f"<b>{col}</b><br>%{{y:.2f}}<extra></extra>",
         ))
-    fig.update_layout(**CHART_THEME, title=dict(text=title, font=dict(size=14, weight=700), x=0), height=height, yaxis_title=y_title)
+    # Crea copia theme senza yaxis per evitare conflitti
+    theme_copy = {k: v for k, v in CHART_THEME.items() if k != "yaxis"}
+
+    fig.update_layout(
+        **theme_copy,
+        title=dict(text=title, font=dict(size=14, weight=700), x=0),
+        yaxis=dict(**CHART_THEME["yaxis"], title=y_title) if y_title else CHART_THEME["yaxis"],
+        height=height,
+    )
     return fig
 
 

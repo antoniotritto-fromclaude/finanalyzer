@@ -77,7 +77,7 @@ def render():
         )
     with col_btn:
         st.markdown("<br>", unsafe_allow_html=True)
-        search = st.button("🔍 Analizza", type="primary", use_container_width=True)
+        search = st.button("🔍 Analizza", type="primary", width="stretch")
 
     if not search and "fund_symbol" not in st.session_state:
         st.info("Inserisci un simbolo e clicca Analizza.")
@@ -160,7 +160,7 @@ def render():
             fig = line_chart(df_plot, title=f"{symbol} – Prezzo Ultimi 12 Mesi",
                              y_title=f"Prezzo ({curr})", filled=True, height=340)
             fig.update_layout(paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(255,255,255,0.85)")
-            st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": False})
+            st.plotly_chart(fig, width="stretch", config={"displayModeBar": False})
 
     with tab_5y:
         if not hist_5y.empty:
@@ -168,13 +168,13 @@ def render():
             fig = line_chart(df_plot, title=f"{symbol} – Storico 5 Anni",
                              y_title=f"Prezzo ({curr})", filled=True, height=340)
             fig.update_layout(paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(255,255,255,0.85)")
-            st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": False})
+            st.plotly_chart(fig, width="stretch", config={"displayModeBar": False})
 
     with tab_candle:
         if not hist_1y.empty:
             fig = candle_chart(hist_1y, title=f"{symbol} – Candlestick", height=360)
             fig.update_layout(paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(255,255,255,0.85)")
-            st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": False})
+            st.plotly_chart(fig, width="stretch", config={"displayModeBar": False})
 
     # ── Statistiche rendimento ────────────────────────────────────────────────
     st.markdown("<br>", unsafe_allow_html=True)

@@ -249,7 +249,7 @@ def render():
                             if st.button(
                                 f"➕ {display_name}",
                                 key=f"recent_{idx}",
-                                use_container_width=True,
+                                width="stretch",
                                 help=f"{fund.get('name')} - {fund.get('source')}"
                             ):
                                 success, msg = _add_to_portfolio(fund.get("id"))
@@ -276,7 +276,7 @@ def render():
         )
     with col2:
         st.markdown("<br>", unsafe_allow_html=True)
-        if st.button("➕ Aggiungi", key="add_manual", type="primary", use_container_width=True):
+        if st.button("➕ Aggiungi", key="add_manual", type="primary", width="stretch"):
             if manual_symbol:
                 # Non uppercase gli URL! Solo i ticker normali
                 clean_symbol = manual_symbol.strip()
@@ -441,7 +441,7 @@ def render():
 
         # Bottone aggiungi
         st.markdown("<br>", unsafe_allow_html=True)
-        if st.button("➕ Aggiungi Fondo Manuale", key="add_manual_fund", type="primary", use_container_width=True):
+        if st.button("➕ Aggiungi Fondo Manuale", key="add_manual_fund", type="primary", width="stretch"):
             if not manual_name:
                 st.error("❌ Il nome del fondo è obbligatorio!")
             elif manual_nav <= 0:
@@ -512,7 +512,7 @@ def render():
                     with cols[i % 4]:
                         # Tronca nome se troppo lungo
                         display_name = name[:15] + "..." if len(name) > 15 else name
-                        if st.button(f"{display_name}\n({ticker})", key=f"stock_{ticker}", use_container_width=True, help=f"{name} - {ticker}"):
+                        if st.button(f"{display_name}\n({ticker})", key=f"stock_{ticker}", width="stretch", help=f"{name} - {ticker}"):
                             success, msg = _add_to_portfolio(ticker)
                             if success:
                                 st.success(msg)
@@ -533,7 +533,7 @@ def render():
                 for i, (ticker, name) in enumerate(etfs_dict.items()):
                     with cols[i % 4]:
                         display_name = name[:18] + "..." if len(name) > 18 else name
-                        if st.button(f"{display_name}\n({ticker})", key=f"etf_{ticker}", use_container_width=True, help=f"{name} - {ticker}"):
+                        if st.button(f"{display_name}\n({ticker})", key=f"etf_{ticker}", width="stretch", help=f"{name} - {ticker}"):
                             success, msg = _add_to_portfolio(ticker)
                             if success:
                                 st.success(msg)
@@ -556,7 +556,7 @@ def render():
                     with cols[i % 3]:
                         # Mostra nome abbreviato + rating
                         display_name = name[:22] + "..." if len(name) > 22 else name
-                        if st.button(f"{display_name}\n(ISIN: {isin[:8]}...)", key=f"fund_{isin}", use_container_width=True, help=f"{name}\nISIN: {isin}"):
+                        if st.button(f"{display_name}\n(ISIN: {isin[:8]}...)", key=f"fund_{isin}", width="stretch", help=f"{name}\nISIN: {isin}"):
                             success, msg = _add_to_portfolio(isin)
                             if success:
                                 st.success(msg)
@@ -576,7 +576,7 @@ def render():
                 cols = st.columns(4)
                 for i, (ticker, name) in enumerate(comm_dict.items()):
                     with cols[i % 4]:
-                        if st.button(f"{name}\n({ticker})", key=f"comm_{ticker}", use_container_width=True, help=f"{name} - {ticker}"):
+                        if st.button(f"{name}\n({ticker})", key=f"comm_{ticker}", width="stretch", help=f"{name} - {ticker}"):
                             success, msg = _add_to_portfolio(ticker)
                             if success:
                                 st.success(msg)
@@ -595,7 +595,7 @@ def render():
             cols = st.columns(4)
             for i, (ticker, name) in enumerate(crypto_dict.items()):
                 with cols[i % 4]:
-                    if st.button(f"{name}\n({ticker})", key=f"crypto_{ticker}", use_container_width=True, help=f"{name} - {ticker}"):
+                    if st.button(f"{name}\n({ticker})", key=f"crypto_{ticker}", width="stretch", help=f"{name} - {ticker}"):
                         success, msg = _add_to_portfolio(ticker)
                         if success:
                             st.success(msg)
