@@ -189,7 +189,7 @@ def render():
     # Inject dark theme CSS
     st.markdown(DARK_THEME_CSS, unsafe_allow_html=True)
 
-    st.title("💼 Portfolio Dashboard")
+    st.markdown('<h1 style="color:#FFFFFF !important;font-size:2.5rem;font-weight:800;margin-bottom:20px;">💼 Portfolio Dashboard</h1>', unsafe_allow_html=True)
 
     # ── Session State Init ────────────────────────────────────────────
     if "pf_symbols" not in st.session_state:
@@ -201,7 +201,7 @@ def render():
     # 📝 STEP 1: PORTFOLIO SETUP
     # ══════════════════════════════════════════════════════════════════
 
-    st.markdown("### 🎯 Configurazione Portafoglio")
+    st.markdown('<h3 style="color:#FFFFFF !important;font-size:1.5rem;font-weight:700;margin:20px 0;">🎯 Configurazione Portafoglio</h3>', unsafe_allow_html=True)
 
     col1, col2 = st.columns([2, 1])
 
@@ -296,7 +296,7 @@ def render():
     # 📈 SECTION 1: PORTFOLIO COMPOSITION
     # ══════════════════════════════════════════════════════════════════
 
-    st.markdown('<h2 class="section-header-dark">📊 Composizione Portfolio</h2>', unsafe_allow_html=True)
+    st.markdown('<h2 style="color:#FFFFFF !important;font-size:1.8rem;font-weight:800;margin:40px 0 20px 0;padding-bottom:12px;border-bottom:2px solid #D4AF37;">📊 Composizione Portfolio</h2>', unsafe_allow_html=True)
 
     col_pie, col_table = st.columns([1, 2])
 
@@ -328,7 +328,7 @@ def render():
     # 📈 SECTION 2: PERFORMANCE & CORRELATION
     # ══════════════════════════════════════════════════════════════════
 
-    st.markdown('<h2 class="section-header-dark">📈 Performance & Correlazione</h2>', unsafe_allow_html=True)
+    st.markdown('<h2 style="color:#FFFFFF !important;font-size:1.8rem;font-weight:800;margin:40px 0 20px 0;padding-bottom:12px;border-bottom:2px solid #D4AF37;">📈 Performance & Correlazione</h2>', unsafe_allow_html=True)
 
     # Normalized performance
     norm = (prices_df / prices_df.iloc[0]) * 100
@@ -342,7 +342,7 @@ def render():
 
     # Correlation matrix
     if len(prices_df.columns) >= 2:
-        st.markdown("**Matrice di Correlazione:**")
+        st.markdown('<p style="color:#E5E7EB !important;font-weight:600;font-size:1rem;margin:20px 0 10px 0;">📊 Matrice di Correlazione:</p>', unsafe_allow_html=True)
         corr = prices_df.pct_change().dropna().corr()
         fig_corr = heatmap_correlation(corr, height=400)
         fig_corr.update_layout(
@@ -356,7 +356,7 @@ def render():
     # 🎯 SECTION 3: AUTOMATIC BACKTEST (based on selected period)
     # ══════════════════════════════════════════════════════════════════
 
-    st.markdown('<h2 class="section-header-dark">🎯 Backtest Automatico</h2>', unsafe_allow_html=True)
+    st.markdown('<h2 style="color:#FFFFFF !important;font-size:1.8rem;font-weight:800;margin:40px 0 20px 0;padding-bottom:12px;border-bottom:2px solid #D4AF37;">🎯 Backtest Automatico</h2>', unsafe_allow_html=True)
 
     st.markdown(f'<span class="status-badge info">Periodo: {period_sel}</span>', unsafe_allow_html=True)
     st.markdown("<br>", unsafe_allow_html=True)
@@ -461,7 +461,7 @@ def render():
     # 🔮 SECTION 4: PREDICTIONS (Optional)
     # ══════════════════════════════════════════════════════════════════
 
-    st.markdown('<h2 class="section-header-dark">🔮 Predizioni (Opzionale)</h2>', unsafe_allow_html=True)
+    st.markdown('<h2 style="color:#FFFFFF !important;font-size:1.8rem;font-weight:800;margin:40px 0 20px 0;padding-bottom:12px;border-bottom:2px solid #D4AF37;">🔮 Predizioni (Opzionale)</h2>', unsafe_allow_html=True)
 
     run_predictions = st.checkbox("🔮 **Calcola predizioni a 6 mesi (Monte Carlo)**", value=False)
 
@@ -537,7 +537,7 @@ def render():
     st.markdown("<br><br>", unsafe_allow_html=True)
     st.divider()
 
-    st.markdown("### 📄 Genera Report PDF")
+    st.markdown('<h3 style="color:#FFFFFF !important;font-size:1.5rem;font-weight:700;margin:20px 0;">📄 Genera Report PDF</h3>', unsafe_allow_html=True)
 
     col1, col2, col3 = st.columns([1, 1, 1])
 
