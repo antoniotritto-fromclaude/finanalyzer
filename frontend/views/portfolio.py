@@ -293,77 +293,119 @@ def render():
         include_predictions = st.checkbox("Includi Predizioni", value=True, key="pdf_predictions")
 
         if st.button("⬇️ Genera Report PDF", type="primary", use_container_width=True):
-            with st.spinner("Generazione report PDF in corso... ⏳"):
-                try:
-                    from backend.reports.pdf_generator import generate_portfolio_report
-                    from backend.analyzers.backtest import BacktestEngine
-                    from backend.models.predictor import PortfolioPredictor
+            try:
+                # Step 1: Check dependencies
+                with st.spinner("📦 Verifica dipendenze..."):
+                    try:
+                        import reportlab
+                        from reportlab.pdfgen import canvas
+                        st.info("✅ ReportLab installato")
+                    except ImportError as e:
+                        st.error("❌ ReportLab non installato! Esegui: pip install reportlab Pillow")
+                        st.code(str(e))
+                        st.stop()
 
-                    # Normalize weights
+                # Step 2: Import modules
+                with st.spinner("📚 Caricamento moduli..."):
+                    try:
+                        from backend.reports.pdf_generator import generate_portfolio_report
+                        st.info("✅ PDF Generator importato")
+                    except Exception as e:
+                        st.error(f"❌ Errore import PDF generator: {e}")
+                        import traceback
+                        st.code(traceback.format_exc())
+                        st.stop()
+
+                    try:
+                        from backend.analyzers.backtest import BacktestEngine
+                        from backend.models.predictor import PortfolioPredictor
+                        st.info("✅ Moduli analisi importati")
+                    except Exception as e:
+                        st.warning(f"⚠️ Moduli analisi non disponibili: {e}")
+                        # Continue without them
+
+                # Step 3: Normalize weights
+                with st.spinner("⚖️ Normalizzazione pesi..."):
                     weights = st.session_state.get("pf_weights", {})
                     if not weights or set(weights.keys()) != set(symbols):
                         weights = {s: 1/len(symbols) for s in symbols}
                     total_w = sum(weights.values())
                     weights_clean = {s: w/total_w for s, w in weights.items()}
+                    st.info(f"✅ Pesi normalizzati: {len(weights_clean)} asset")
 
-                    # Load prices for backtest and predictions
-                    backtest_results = None
-                    prediction_results = None
+                # Step 4: Backtest (optional)
+                backtest_results = None
+                if include_backtest:
+                    with st.spinner("📊 Esecuzione backtest..."):
+                        try:
+                            prices_df = _load_prices(symbols, period="3y")
+                            if not prices_df.empty:
+                                engine = BacktestEngine(prices_df)
+                                backtest_results = engine.backtest_portfolio(
+                                    weights=weights_clean,
+                                    start_date=(prices_df.index[-1] - pd.DateOffset(years=1)).strftime("%Y-%m-%d"),
+                                    end_date=prices_df.index[-1].strftime("%Y-%m-%d"),
+                                    initial_value=initial_value,
+                                )
+                                st.info("✅ Backtest completato")
+                            else:
+                                st.warning("⚠️ Dati insufficienti per backtest")
+                        except Exception as e:
+                            st.warning(f"⚠️ Backtest saltato: {e}")
 
-                    if include_backtest or include_predictions:
-                        prices_df = _load_prices(symbols, period="3y")
+                # Step 5: Predictions (optional)
+                prediction_results = None
+                if include_predictions:
+                    with st.spinner("🔮 Calcolo predizioni Monte Carlo..."):
+                        try:
+                            prices_df = _load_prices(symbols, period="3y")
+                            if not prices_df.empty:
+                                predictor = PortfolioPredictor(prices_df)
+                                scenarios = predictor.predict_portfolio_scenarios(
+                                    weights=weights_clean,
+                                    months=6,
+                                    initial_value=initial_value,
+                                    num_simulations=5000,
+                                )
+                                prediction_results = {"scenarios": scenarios}
+                                st.info("✅ Predizioni completate")
+                            else:
+                                st.warning("⚠️ Dati insufficienti per predizioni")
+                        except Exception as e:
+                            st.warning(f"⚠️ Predizioni saltate: {e}")
 
-                        if not prices_df.empty:
-                            # Backtest
-                            if include_backtest:
-                                try:
-                                    engine = BacktestEngine(prices_df)
-                                    backtest_results = engine.backtest_portfolio(
-                                        weights=weights_clean,
-                                        start_date=(prices_df.index[-1] - pd.DateOffset(years=1)).strftime("%Y-%m-%d"),
-                                        end_date=prices_df.index[-1].strftime("%Y-%m-%d"),
-                                        initial_value=initial_value,
-                                    )
-                                except Exception as e:
-                                    st.warning(f"⚠️ Backtest non disponibile: {e}")
+                # Step 6: Generate PDF
+                with st.spinner("📄 Generazione PDF..."):
+                    try:
+                        pdf_bytes = generate_portfolio_report(
+                            portfolio_name=portfolio_name,
+                            symbols=symbols,
+                            weights=weights_clean,
+                            initial_value=initial_value,
+                            backtest_results=backtest_results,
+                            prediction_results=prediction_results,
+                        )
+                        st.info(f"✅ PDF generato ({len(pdf_bytes)} bytes)")
+                    except Exception as e:
+                        st.error(f"❌ Errore generazione PDF: {e}")
+                        import traceback
+                        st.code(traceback.format_exc())
+                        st.stop()
 
-                            # Predictions
-                            if include_predictions:
-                                try:
-                                    predictor = PortfolioPredictor(prices_df)
-                                    scenarios = predictor.predict_portfolio_scenarios(
-                                        weights=weights_clean,
-                                        months=6,
-                                        initial_value=initial_value,
-                                        num_simulations=5000,
-                                    )
-                                    prediction_results = {"scenarios": scenarios}
-                                except Exception as e:
-                                    st.warning(f"⚠️ Predizioni non disponibili: {e}")
+                # Step 7: Save to session state
+                filename = f"{portfolio_name.replace(' ', '_')}_{datetime.now().strftime('%Y%m%d_%H%M')}.pdf"
+                st.session_state["pdf_data"] = pdf_bytes
+                st.session_state["pdf_filename"] = filename
+                st.session_state["pdf_ready"] = True
 
-                    # Generate PDF
-                    pdf_bytes = generate_portfolio_report(
-                        portfolio_name=portfolio_name,
-                        symbols=symbols,
-                        weights=weights_clean,
-                        initial_value=initial_value,
-                        backtest_results=backtest_results,
-                        prediction_results=prediction_results,
-                    )
+                st.success("✅ Report PDF generato con successo!")
+                st.balloons()
+                st.rerun()
 
-                    # Save to session state
-                    filename = f"{portfolio_name.replace(' ', '_')}_{datetime.now().strftime('%Y%m%d_%H%M')}.pdf"
-                    st.session_state["pdf_data"] = pdf_bytes
-                    st.session_state["pdf_filename"] = filename
-                    st.session_state["pdf_ready"] = True
-
-                    st.success("✅ Report PDF generato con successo!")
-                    st.rerun()
-
-                except Exception as e:
-                    st.error(f"❌ Errore generazione PDF: {e}")
-                    import traceback
-                    st.code(traceback.format_exc())
+            except Exception as e:
+                st.error(f"❌ Errore generale: {e}")
+                import traceback
+                st.code(traceback.format_exc())
 
         # Show download button if PDF is ready
         if st.session_state.get("pdf_ready", False):
