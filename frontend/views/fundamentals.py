@@ -8,6 +8,7 @@ import yfinance as yf
 import time
 from frontend.styles.design import badge, color_pct, chip
 from frontend.components.charts import line_chart, candle_chart, bar_chart
+from frontend.utils.formatters import format_currency_eur, format_number_eur, format_percentage
 
 
 def _get_data(symbol: str):
@@ -116,9 +117,9 @@ def render():
             <div style="font-size:0.78rem;color:#9ca3af;font-weight:600;letter-spacing:0.5px;">{exch} · {curr}</div>
             <div style="font-size:1.6rem;font-weight:800;color:#0f1c2e;">{name}</div>
             <div style="font-size:1.25rem;font-weight:700;color:#2471c8;">
-                {curr} {last:,.2f}
+                {curr} {format_number_eur(last, decimals=2)}
                 &nbsp;<span class="{'delta-pos' if chg>=0 else 'delta-neg'}" style="font-size:1rem;">
-                    {'▲' if chg>=0 else '▼'} {abs(chg):.2f}%
+                    {'▲' if chg>=0 else '▼'} {format_percentage(abs(chg), decimals=2)}
                 </span>
             </div>
         </div>

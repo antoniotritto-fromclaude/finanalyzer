@@ -10,6 +10,7 @@ import time
 from datetime import datetime, timedelta
 from frontend.styles.design import badge, card_metric, color_pct, chip, stars, MAIN_CSS
 from frontend.components.charts import line_chart, bar_chart, seasonality_bar
+from frontend.utils.formatters import format_currency_eur, format_number_eur, format_percentage
 
 # Questi saranno caricati dinamicamente da Yahoo Finance
 MARKET_INDICES = [
@@ -84,7 +85,7 @@ def _load_market_indices():
             results.append({
                 "name": idx["name"],
                 "symbol": idx["symbol"],
-                "price": f"{last_price:,.2f}",
+                "price": format_number_eur(last_price, decimals=2),
                 "change": change_pct,
                 "ytd": ytd_return,
             })
@@ -193,8 +194,8 @@ def render():
                         plot_bgcolor="rgba(255,255,255,0.9)",
                         title=dict(
                             text=f"<b style='font-size:14px;'>{name}</b><br>"
-                                 f"<span style='font-size:16px;font-weight:700;color:{color};'>{current_val:,.2f}</span><br>"
-                                 f"<span style='font-size:18px;font-weight:800;color:{color};'>{perf_6m:+.1f}%</span>",
+                                 f"<span style='font-size:16px;font-weight:700;color:{color};'>{format_number_eur(current_val, decimals=2)}</span><br>"
+                                 f"<span style='font-size:18px;font-weight:800;color:{color};'>{'+' if perf_6m >= 0 else ''}{format_percentage(perf_6m, decimals=1)}</span>",
                             font=dict(size=12),
                             x=0.5,
                             xanchor="center",
