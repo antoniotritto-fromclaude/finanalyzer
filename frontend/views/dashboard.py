@@ -19,6 +19,9 @@ MARKET_INDICES = [
     {"name":"EURO STOXX 50","symbol":"^STOXX50E"},
     {"name":"DAX","symbol":"^GDAXI"},
     {"name":"Nasdaq","symbol":"^IXIC"},
+    {"name":"Hang Seng","symbol":"^HSI"},
+    {"name":"Nikkei 225","symbol":"^N225"},
+    {"name":"Hang Seng China","symbol":"^HSCE"},
     {"name":"Gold","symbol":"GC=F"},
 ]
 
