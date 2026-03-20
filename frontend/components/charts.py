@@ -209,10 +209,26 @@ def prediction_chart(
                   annotation_position="bottom right")
 
     fig.update_layout(
-        **CHART_THEME,
+        paper_bgcolor=CHART_THEME["paper_bgcolor"],
+        plot_bgcolor=CHART_THEME["plot_bgcolor"],
+        font=CHART_THEME["font"],
+        margin=CHART_THEME["margin"],
+        xaxis=CHART_THEME["xaxis"],
+        legend=CHART_THEME["legend"],
+        hovermode=CHART_THEME["hovermode"],
         title=dict(text="Scenari Predittivi a 6 Mesi", font=dict(size=14, weight=700), x=0),
-        yaxis=dict(**CHART_THEME["yaxis"], title="Valore Portafoglio (€)", tickformat=",.0f"),
         height=height,
+    )
+
+    # Aggiorna yaxis separatamente per evitare conflitti
+    fig.update_yaxes(
+        title="Valore Portafoglio (€)",
+        tickformat=",.0f",
+        showgrid=True,
+        gridcolor="#e5eef8",
+        gridwidth=1,
+        zeroline=False,
+        linecolor="#c8daea"
     )
     return fig
 
