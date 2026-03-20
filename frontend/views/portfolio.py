@@ -298,7 +298,6 @@ def render():
                     from backend.reports.pdf_generator import generate_portfolio_report
                     from backend.analyzers.backtest import BacktestEngine
                     from backend.models.predictor import PortfolioPredictor
-                    from datetime import datetime
 
                     # Normalize weights
                     weights = st.session_state.get("pf_weights", {})
