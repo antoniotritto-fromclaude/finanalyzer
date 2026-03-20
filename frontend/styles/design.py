@@ -41,6 +41,35 @@ html, body, [class*="css"] {
     max-width: 1400px;
 }
 
+/* ===== DARK THEME TEXT COLORS ===== */
+.main h1, .main h2, .main h3, .main h4, .main h5, .main h6 {
+    color: #FFFFFF !important;
+}
+
+.main p, .main span, .main label, .main div {
+    color: #E5E7EB !important;
+}
+
+/* Streamlit widgets text */
+.stTextInput label, .stSelectbox label, .stCheckbox label, .stRadio label {
+    color: #E5E7EB !important;
+}
+
+.stTextInput input {
+    color: #0A1628 !important;
+    background: #FFFFFF !important;
+}
+
+.stSelectbox select {
+    color: #0A1628 !important;
+    background: #FFFFFF !important;
+}
+
+/* Markdown text */
+.main .stMarkdown, .main .stMarkdown p, .main .stMarkdown span {
+    color: #E5E7EB !important;
+}
+
 /* Keep Streamlit header visible for sidebar toggle */
 header[data-testid="stHeader"] {
     background: transparent !important;

@@ -40,7 +40,7 @@ def line_chart(
 
     fig.update_layout(
         **theme_copy,
-        title=dict(text=title, font=dict(size=14, weight=700), x=0),
+        title=dict(text=title, font=dict(size=14, weight=700, color="#FFFFFF"), x=0),
         yaxis=dict(**CHART_THEME["yaxis"], title=y_title) if y_title else CHART_THEME["yaxis"],
         height=height,
     )
@@ -55,7 +55,7 @@ def candle_chart(df: pd.DataFrame, title: str = "", height: int = 380) -> go.Fig
         increasing_line_color="#22c55e", decreasing_line_color="#ef4444",
         increasing_fillcolor="#22c55e", decreasing_fillcolor="#ef4444",
     )])
-    fig.update_layout(**CHART_THEME, title=dict(text=title, font=dict(size=14, weight=700), x=0), height=height)
+    fig.update_layout(**CHART_THEME, title=dict(text=title, font=dict(size=14, weight=700, color="#FFFFFF"), x=0), height=height)
     fig.update_xaxes(rangeslider_visible=False)
     return fig
 
@@ -65,16 +65,16 @@ def pie_chart(labels: List[str], values: List[float], title: str = "", height: i
     fig = go.Figure(data=[go.Pie(
         labels=labels, values=values,
         hole=0.4,
-        marker=dict(colors=COLORS[:len(labels)], line=dict(color="white", width=2)),
-        textfont=dict(size=11, family="Inter"),
+        marker=dict(colors=COLORS[:len(labels)], line=dict(color="#1E293B", width=2)),
+        textfont=dict(size=12, family="Inter", color="#FFFFFF"),
         hovertemplate="<b>%{label}</b><br>%{value:.1f}%<extra></extra>",
     )])
     fig.update_layout(
-        **{k: v for k, v in CHART_THEME.items() if k not in ["xaxis","yaxis","hovermode"]},
-        title=dict(text=title, font=dict(size=13, weight=700), x=0),
+        **{k: v for k, v in CHART_THEME.items() if k not in ["xaxis","yaxis","hovermode","legend"]},
+        title=dict(text=title, font=dict(size=14, weight=700, color="#FFFFFF"), x=0),
         height=height,
         showlegend=True,
-        legend=dict(orientation="v", x=1.05),
+        legend=dict(orientation="v", x=1.05, font=dict(color="#FFFFFF", size=11)),
     )
     return fig
 
@@ -148,7 +148,7 @@ def efficient_frontier_chart(
 
     fig.update_layout(
         **theme_copy,
-        title=dict(text="Frontiera Efficiente di Markowitz", font=dict(size=14, weight=700), x=0),
+        title=dict(text="Frontiera Efficiente di Markowitz", font=dict(size=14, weight=700, color="#FFFFFF"), x=0),
         xaxis=dict(**CHART_THEME["xaxis"], title="Volatilità (Rischio)", tickformat=".0%"),
         yaxis=dict(**CHART_THEME["yaxis"], title="Rendimento Atteso", tickformat=".0%"),
         height=height,
@@ -219,7 +219,7 @@ def prediction_chart(
         xaxis=CHART_THEME["xaxis"],
         legend=CHART_THEME["legend"],
         hovermode=CHART_THEME["hovermode"],
-        title=dict(text="Scenari Predittivi a 6 Mesi", font=dict(size=14, weight=700), x=0),
+        title=dict(text="Scenari Predittivi a 6 Mesi", font=dict(size=14, weight=700, color="#FFFFFF"), x=0),
         height=height,
     )
 
@@ -257,7 +257,7 @@ def drawdown_chart(portfolio_value: pd.Series, height: int = 220) -> go.Figure:
 
     fig.update_layout(
         **theme_copy,
-        title=dict(text="Drawdown", font=dict(size=12, weight=700), x=0),
+        title=dict(text="Drawdown", font=dict(size=12, weight=700, color="#FFFFFF"), x=0),
         yaxis=dict(**CHART_THEME["yaxis"], title="%", ticksuffix="%"),
         height=height,
     )
@@ -280,7 +280,7 @@ def heatmap_correlation(corr_matrix: pd.DataFrame, height: int = 320) -> go.Figu
     ))
     fig.update_layout(
         **{k: v for k, v in CHART_THEME.items() if k not in ["xaxis","yaxis"]},
-        title=dict(text="Matrice di Correlazione", font=dict(size=13, weight=700), x=0),
+        title=dict(text="Matrice di Correlazione", font=dict(size=14, weight=700, color="#FFFFFF"), x=0),
         height=height,
     )
     return fig
@@ -306,7 +306,7 @@ def seasonality_bar(monthly_returns: Dict[str, float], height: int = 250) -> go.
 
     fig.update_layout(
         **theme_copy,
-        title=dict(text="Stagionalità Mensile", font=dict(size=13, weight=700), x=0),
+        title=dict(text="Stagionalità Mensile", font=dict(size=13, weight=700, color="#FFFFFF"), x=0),
         yaxis=dict(**CHART_THEME["yaxis"], title="%", ticksuffix="%"),
         height=height,
     )
