@@ -108,12 +108,6 @@ CHART_THEME_LUXURY = {
             "size": 11,
             "color": COLORS["text_secondary"],
         },
-        "titlefont": {
-            "family": "Inter, sans-serif",
-            "size": 13,
-            "color": COLORS["text_primary"],
-            "weight": 600,
-        },
     },
 
     "yaxis": {
@@ -127,12 +121,6 @@ CHART_THEME_LUXURY = {
             "family": "'SF Mono', 'Roboto Mono', monospace",
             "size": 11,
             "color": COLORS["text_secondary"],
-        },
-        "titlefont": {
-            "family": "Inter, sans-serif",
-            "size": 13,
-            "color": COLORS["text_primary"],
-            "weight": 600,
         },
     },
 
