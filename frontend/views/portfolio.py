@@ -292,7 +292,7 @@ def render():
         include_backtest = st.checkbox("Includi Backtest", value=True, key="pdf_backtest")
         include_predictions = st.checkbox("Includi Predizioni", value=True, key="pdf_predictions")
 
-        if st.button("⬇️ Scarica Report PDF", type="primary", use_container_width=True):
+        if st.button("⬇️ Genera Report PDF", type="primary", use_container_width=True):
             with st.spinner("Generazione report PDF in corso... ⏳"):
                 try:
                     from backend.reports.pdf_generator import generate_portfolio_report
@@ -351,21 +351,36 @@ def render():
                         prediction_results=prediction_results,
                     )
 
-                    # Download button
-                    st.success("✅ Report PDF generato con successo!")
-
+                    # Save to session state
                     filename = f"{portfolio_name.replace(' ', '_')}_{datetime.now().strftime('%Y%m%d_%H%M')}.pdf"
+                    st.session_state["pdf_data"] = pdf_bytes
+                    st.session_state["pdf_filename"] = filename
+                    st.session_state["pdf_ready"] = True
 
-                    st.download_button(
-                        label="📥 Scarica Report",
-                        data=pdf_bytes,
-                        file_name=filename,
-                        mime="application/pdf",
-                        type="primary",
-                        use_container_width=True,
-                    )
+                    st.success("✅ Report PDF generato con successo!")
+                    st.rerun()
 
                 except Exception as e:
                     st.error(f"❌ Errore generazione PDF: {e}")
                     import traceback
                     st.code(traceback.format_exc())
+
+        # Show download button if PDF is ready
+        if st.session_state.get("pdf_ready", False):
+            st.markdown("<br>", unsafe_allow_html=True)
+
+            col1, col2, col3 = st.columns([1, 2, 1])
+            with col2:
+                st.download_button(
+                    label="📥 Scarica Report PDF",
+                    data=st.session_state["pdf_data"],
+                    file_name=st.session_state["pdf_filename"],
+                    mime="application/pdf",
+                    type="primary",
+                    use_container_width=True,
+                )
+
+            # Reset button
+            if st.button("🔄 Genera Nuovo Report", use_container_width=True):
+                st.session_state["pdf_ready"] = False
+                st.rerun()
