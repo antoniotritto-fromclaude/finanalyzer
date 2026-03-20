@@ -68,6 +68,63 @@ def load_prices_smart(symbols: List[str], period: str = "3y") -> pd.DataFrame:
     for symbol in symbols:
         logger.info(f"Caricamento prezzi per {symbol}...")
 
+        # Check 0: È un fondo inserito manualmente?
+        if symbol.startswith("MANUAL_"):
+            logger.info(f"  → Rilevato fondo manuale: {symbol}")
+            try:
+                # Importa streamlit per accedere a session_state
+                import streamlit as st
+                manual_funds = st.session_state.get("manual_funds", {})
+
+                if symbol in manual_funds:
+                    fund_data = manual_funds[symbol]
+                    nav = fund_data.get("nav", 100.0)
+                    perf = fund_data.get("performance", {})
+
+                    # Genera serie storica sintetica basata su performance
+                    # Oggi = NAV corrente
+                    # 1 anno fa = NAV / (1 + perf_1y/100)
+                    # 3 anni fa = NAV / ((1 + perf_3y/100)^3)
+                    # 5 anni fa = NAV / ((1 + perf_5y/100)^5)
+
+                    dates = [pd.Timestamp.now()]
+                    values = [nav]
+
+                    perf_1y = perf.get("1y", 0) / 100
+                    perf_3y = perf.get("3y", 0) / 100
+                    perf_5y = perf.get("5y", 0) / 100
+
+                    # Calcola NAV storico
+                    if perf_1y != 0:
+                        nav_1y = nav / (1 + perf_1y)
+                        dates.append(pd.Timestamp.now() - pd.DateOffset(years=1))
+                        values.append(nav_1y)
+
+                    if perf_3y != 0:
+                        nav_3y = nav / ((1 + perf_3y) ** 3)
+                        dates.append(pd.Timestamp.now() - pd.DateOffset(years=3))
+                        values.append(nav_3y)
+
+                    if perf_5y != 0:
+                        nav_5y = nav / ((1 + perf_5y) ** 5)
+                        dates.append(pd.Timestamp.now() - pd.DateOffset(years=5))
+                        values.append(nav_5y)
+
+                    # Crea serie temporale
+                    manual_series = pd.Series(dict(zip(dates, values))).sort_index()
+
+                    # Interpola per avere dati intermedi
+                    manual_series = manual_series.resample('D').interpolate(method='linear')
+
+                    logger.info(f"  ✅ Fondo manuale caricato: {len(manual_series)} punti sintetici")
+                    prices[symbol] = manual_series
+                else:
+                    logger.warning(f"  ⚠️  Fondo manuale {symbol} non trovato in session_state")
+
+            except Exception as e:
+                logger.error(f"  ❌ Errore caricamento fondo manuale: {e}")
+            continue
+
         # Check 1: È un URL Investing.com?
         if investing_collector.is_investing_url(symbol):
             logger.info(f"  → Rilevato URL Investing.com: {symbol}")
@@ -282,3 +339,35 @@ def get_latest_price(symbol: str) -> Dict:
         "currency": "EUR",
         "source": "N/A",
     }
+
+def get_manual_fund_info(symbol: str) -> Dict:
+    """
+    Ottiene informazioni complete per un fondo inserito manualmente
+
+    Args:
+        symbol: ID fondo manuale (es: MANUAL_LU0738951036)
+
+    Returns:
+        Dict con tutte le info del fondo o None
+    """
+    if not symbol.startswith("MANUAL_"):
+        return None
+
+    try:
+        import streamlit as st
+        manual_funds = st.session_state.get("manual_funds", {})
+
+        if symbol in manual_funds:
+            return manual_funds[symbol]
+        else:
+            logger.warning(f"Fondo manuale {symbol} non trovato")
+            return None
+
+    except Exception as e:
+        logger.error(f"Errore recupero info fondo manuale: {e}")
+        return None
+
+
+def is_manual_fund(symbol: str) -> bool:
+    """Verifica se un simbolo è un fondo manuale"""
+    return symbol.startswith("MANUAL_")

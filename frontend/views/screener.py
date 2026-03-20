@@ -294,6 +294,203 @@ def render():
     st.markdown("<br>", unsafe_allow_html=True)
 
     # ═══════════════════════════════════════════════════════════════
+    # INSERIMENTO MANUALE FONDO (Fallback se scraping fallisce)
+    # ═══════════════════════════════════════════════════════════════
+    with st.expander("📝 Inserimento Manuale Fondo (se scraping fallisce)", expanded=False):
+        st.markdown("""
+        <div style="padding:12px;background:#fff3cd;border-left:4px solid #ffc107;border-radius:8px;margin-bottom:16px;">
+            <b>💡 Usa questo form se:</b>
+            <ul style="margin:8px 0 0 0;">
+                <li>Lo scraping automatico fallisce</li>
+                <li>Vuoi aggiungere un fondo con dati custom</li>
+                <li>Il fondo non è disponibile su Morningstar/Investing/Quantalys</li>
+            </ul>
+        </div>
+        """, unsafe_allow_html=True)
+
+        col1, col2 = st.columns(2)
+
+        with col1:
+            manual_name = st.text_input(
+                "Nome Fondo *",
+                placeholder="Es: AZ Fund 1 - AZ Bond Patriot A-EUR",
+                key="manual_fund_name",
+                help="Nome descrittivo del fondo"
+            )
+
+            manual_isin = st.text_input(
+                "ISIN (opzionale)",
+                placeholder="Es: LU0738951036",
+                key="manual_fund_isin",
+                help="Codice ISIN se disponibile"
+            )
+
+            manual_nav = st.number_input(
+                "NAV Corrente (Valore Quota) *",
+                min_value=0.0,
+                value=100.0,
+                step=0.01,
+                format="%.2f",
+                key="manual_fund_nav",
+                help="Valore attuale della quota del fondo"
+            )
+
+            st.markdown("**Performance Storiche (%):**")
+            perf_1y = st.number_input(
+                "Rendimento 1 Anno (%)",
+                min_value=-100.0,
+                max_value=1000.0,
+                value=0.0,
+                step=0.1,
+                format="%.2f",
+                key="manual_fund_1y",
+                help="Performance ultimi 12 mesi"
+            )
+
+            perf_3y = st.number_input(
+                "Rendimento 3 Anni (% annualizzato)",
+                min_value=-100.0,
+                max_value=1000.0,
+                value=0.0,
+                step=0.1,
+                format="%.2f",
+                key="manual_fund_3y"
+            )
+
+            perf_5y = st.number_input(
+                "Rendimento 5 Anni (% annualizzato)",
+                min_value=-100.0,
+                max_value=1000.0,
+                value=0.0,
+                step=0.1,
+                format="%.2f",
+                key="manual_fund_5y"
+            )
+
+        with col2:
+            st.markdown("**Asset Allocation (%):**")
+
+            alloc_equity = st.slider(
+                "% Azionaria",
+                min_value=0,
+                max_value=100,
+                value=0,
+                step=1,
+                key="manual_fund_equity",
+                help="Percentuale investita in azioni"
+            )
+
+            alloc_bonds = st.slider(
+                "% Obbligazionaria",
+                min_value=0,
+                max_value=100,
+                value=0,
+                step=1,
+                key="manual_fund_bonds",
+                help="Percentuale investita in obbligazioni"
+            )
+
+            alloc_cash = st.slider(
+                "% Liquidità",
+                min_value=0,
+                max_value=100,
+                value=0,
+                step=1,
+                key="manual_fund_cash",
+                help="Percentuale in liquidità/equivalenti"
+            )
+
+            # Verifica totale allocation
+            total_alloc = alloc_equity + alloc_bonds + alloc_cash
+            if total_alloc != 100:
+                st.warning(f"⚠️ Totale Asset Allocation: {total_alloc}% (dovrebbe essere 100%)")
+            else:
+                st.success(f"✅ Asset Allocation valida: {total_alloc}%")
+
+            st.markdown("**Informazioni Aggiuntive (opzionali):**")
+
+            manual_category = st.selectbox(
+                "Categoria",
+                [
+                    "Azionario Globale",
+                    "Azionario Europa",
+                    "Azionario USA",
+                    "Azionario Italia",
+                    "Azionario Emergenti",
+                    "Obbligazionario",
+                    "Obbligazionario Governativo",
+                    "Obbligazionario Corporate",
+                    "Bilanciato Prudente",
+                    "Bilanciato Moderato",
+                    "Bilanciato Aggressivo",
+                    "Altro"
+                ],
+                key="manual_fund_category"
+            )
+
+            manual_ter = st.number_input(
+                "TER - Spese annue (%)",
+                min_value=0.0,
+                max_value=10.0,
+                value=1.0,
+                step=0.01,
+                format="%.2f",
+                key="manual_fund_ter",
+                help="Total Expense Ratio - costi annui del fondo"
+            )
+
+        # Bottone aggiungi
+        st.markdown("<br>", unsafe_allow_html=True)
+        if st.button("➕ Aggiungi Fondo Manuale", key="add_manual_fund", type="primary", use_container_width=True):
+            if not manual_name:
+                st.error("❌ Il nome del fondo è obbligatorio!")
+            elif manual_nav <= 0:
+                st.error("❌ Il NAV deve essere maggiore di zero!")
+            elif total_alloc != 100:
+                st.error(f"❌ L'Asset Allocation deve sommare a 100% (attuale: {total_alloc}%)")
+            else:
+                # Crea ID univoco per fondo manuale
+                fund_id = f"MANUAL_{manual_isin if manual_isin else manual_name.replace(' ', '_')}"
+
+                # Salva dati fondo in session_state
+                if "manual_funds" not in st.session_state:
+                    st.session_state["manual_funds"] = {}
+
+                st.session_state["manual_funds"][fund_id] = {
+                    "name": manual_name,
+                    "isin": manual_isin or "N/A",
+                    "nav": manual_nav,
+                    "performance": {
+                        "1y": perf_1y,
+                        "3y": perf_3y,
+                        "5y": perf_5y,
+                    },
+                    "asset_allocation": {
+                        "equity": alloc_equity,
+                        "bonds": alloc_bonds,
+                        "cash": alloc_cash,
+                    },
+                    "category": manual_category,
+                    "ter": manual_ter,
+                    "source": "Manual Entry",
+                    "added_at": pd.Timestamp.now().isoformat()
+                }
+
+                # Aggiungi al portafoglio
+                if "pf_symbols" not in st.session_state:
+                    st.session_state["pf_symbols"] = []
+
+                if fund_id not in st.session_state["pf_symbols"]:
+                    st.session_state["pf_symbols"].append(fund_id)
+
+                st.success(f"✅ Fondo '{manual_name}' aggiunto manualmente!")
+                st.info(f"💡 ID assegnato: `{fund_id}` - Vai su **Portafoglio** per analizzarlo")
+                time.sleep(1)
+                st.rerun()
+
+    st.markdown("<br>", unsafe_allow_html=True)
+
+    # ═══════════════════════════════════════════════════════════════
     # SELEZIONE RAPIDA
     # ═══════════════════════════════════════════════════════════════
     st.subheader("⚡ Selezione Rapida")
