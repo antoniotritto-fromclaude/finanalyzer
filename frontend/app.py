@@ -20,7 +20,9 @@ st.set_page_config(
 )
 
 from frontend.styles.design import MAIN_CSS
+from frontend.styles.luxury_theme import get_luxury_css
 st.markdown(MAIN_CSS, unsafe_allow_html=True)
+st.markdown(get_luxury_css(), unsafe_allow_html=True)
 
 # ── Import pagine ─────────────────────────────────────────────────────────────
 from frontend.views import dashboard, screener, fundamentals, portfolio, backtest, predictions

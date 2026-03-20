@@ -1,24 +1,16 @@
 """
-Componenti grafici riutilizzabili - stile professionale
+Componenti grafici riutilizzabili - stile luxury
 """
 import plotly.graph_objects as go
 import plotly.express as px
 import pandas as pd
 import numpy as np
 from typing import List, Dict, Optional
+from frontend.styles.luxury_theme import get_chart_theme, get_colors, CHART_COLORS
 
-CHART_THEME = dict(
-    paper_bgcolor="rgba(0,0,0,0)",
-    plot_bgcolor="rgba(255,255,255,0.85)",
-    font=dict(family="Inter, sans-serif", size=12, color="#374151"),
-    margin=dict(l=10, r=10, t=40, b=30),
-    xaxis=dict(showgrid=True, gridcolor="#e5eef8", gridwidth=1, zeroline=False, linecolor="#c8daea"),
-    yaxis=dict(showgrid=True, gridcolor="#e5eef8", gridwidth=1, zeroline=False, linecolor="#c8daea"),
-    legend=dict(bgcolor="rgba(255,255,255,0.8)", bordercolor="#e2eaf4", borderwidth=1, font=dict(size=11)),
-    hovermode="x unified",
-)
-
-COLORS = ["#2471c8","#22c55e","#f59e0b","#ef4444","#8b5cf6","#0ea5c9","#f97316","#ec4899"]
+CHART_THEME = get_chart_theme()
+COLORS_PALETTE = get_colors()
+COLORS = CHART_COLORS  # For line colors in charts
 
 
 def line_chart(

@@ -6,6 +6,7 @@ import pandas as pd
 import numpy as np
 import yfinance as yf
 import time
+from datetime import datetime
 from frontend.styles.design import badge, color_pct, chip
 from frontend.components.charts import (
     line_chart, pie_chart, efficient_frontier_chart, heatmap_correlation
@@ -136,12 +137,14 @@ def render():
 
     # ── Azioni ────────────────────────────────────────────────────────────────
     period_sel = st.selectbox("Periodo storico", ["1y","2y","3y","5y"], index=2)
-    act_cols = st.columns(2)
+    act_cols = st.columns(3)
 
     with act_cols[0]:
         show_data = st.button("📈 Visualizza Storico", use_container_width=True)
     with act_cols[1]:
         optimize = st.button("🎯 Ottimizza Markowitz", type="primary", use_container_width=True)
+    with act_cols[2]:
+        generate_pdf = st.button("📄 Genera Report PDF", use_container_width=True)
 
     # ── Carica prezzi ─────────────────────────────────────────────────────────
     if show_data or optimize or st.session_state.get("pf_prices_loaded"):
@@ -264,3 +267,106 @@ def render():
 
                 except Exception as e:
                     st.error(f"❌ Errore ottimizzazione: {e}")
+
+    # ── PDF Report Generation ─────────────────────────────────────────────────
+    if generate_pdf:
+        st.markdown("<br>", unsafe_allow_html=True)
+        st.markdown("### 📄 Generazione Report PDF")
+
+        # Collect data for PDF
+        portfolio_name = st.text_input(
+            "Nome Portafoglio",
+            value=f"Portfolio-{datetime.now().strftime('%Y%m%d')}",
+            key="pdf_portfolio_name"
+        )
+
+        initial_value = st.number_input(
+            "Capitale Iniziale (€)",
+            min_value=1000.0,
+            max_value=10_000_000.0,
+            value=10000.0,
+            step=1000.0,
+            key="pdf_initial_value"
+        )
+
+        include_backtest = st.checkbox("Includi Backtest", value=True, key="pdf_backtest")
+        include_predictions = st.checkbox("Includi Predizioni", value=True, key="pdf_predictions")
+
+        if st.button("⬇️ Scarica Report PDF", type="primary", use_container_width=True):
+            with st.spinner("Generazione report PDF in corso... ⏳"):
+                try:
+                    from backend.reports.pdf_generator import generate_portfolio_report
+                    from backend.analyzers.backtest import BacktestEngine
+                    from backend.models.predictor import PortfolioPredictor
+                    from datetime import datetime
+
+                    # Normalize weights
+                    weights = st.session_state.get("pf_weights", {})
+                    if not weights or set(weights.keys()) != set(symbols):
+                        weights = {s: 1/len(symbols) for s in symbols}
+                    total_w = sum(weights.values())
+                    weights_clean = {s: w/total_w for s, w in weights.items()}
+
+                    # Load prices for backtest and predictions
+                    backtest_results = None
+                    prediction_results = None
+
+                    if include_backtest or include_predictions:
+                        prices_df = _load_prices(symbols, period="3y")
+
+                        if not prices_df.empty:
+                            # Backtest
+                            if include_backtest:
+                                try:
+                                    engine = BacktestEngine(prices_df)
+                                    backtest_results = engine.backtest_portfolio(
+                                        weights=weights_clean,
+                                        start_date=(prices_df.index[-1] - pd.DateOffset(years=1)).strftime("%Y-%m-%d"),
+                                        end_date=prices_df.index[-1].strftime("%Y-%m-%d"),
+                                        initial_value=initial_value,
+                                    )
+                                except Exception as e:
+                                    st.warning(f"⚠️ Backtest non disponibile: {e}")
+
+                            # Predictions
+                            if include_predictions:
+                                try:
+                                    predictor = PortfolioPredictor(prices_df)
+                                    scenarios = predictor.predict_portfolio_scenarios(
+                                        weights=weights_clean,
+                                        months=6,
+                                        initial_value=initial_value,
+                                        num_simulations=5000,
+                                    )
+                                    prediction_results = {"scenarios": scenarios}
+                                except Exception as e:
+                                    st.warning(f"⚠️ Predizioni non disponibili: {e}")
+
+                    # Generate PDF
+                    pdf_bytes = generate_portfolio_report(
+                        portfolio_name=portfolio_name,
+                        symbols=symbols,
+                        weights=weights_clean,
+                        initial_value=initial_value,
+                        backtest_results=backtest_results,
+                        prediction_results=prediction_results,
+                    )
+
+                    # Download button
+                    st.success("✅ Report PDF generato con successo!")
+
+                    filename = f"{portfolio_name.replace(' ', '_')}_{datetime.now().strftime('%Y%m%d_%H%M')}.pdf"
+
+                    st.download_button(
+                        label="📥 Scarica Report",
+                        data=pdf_bytes,
+                        file_name=filename,
+                        mime="application/pdf",
+                        type="primary",
+                        use_container_width=True,
+                    )
+
+                except Exception as e:
+                    st.error(f"❌ Errore generazione PDF: {e}")
+                    import traceback
+                    st.code(traceback.format_exc())
