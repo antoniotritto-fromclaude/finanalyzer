@@ -135,8 +135,11 @@ def efficient_frontier_chart(
         hovertemplate=f"<b>Ottimale</b><br>Vol: %{{x:.1%}}<br>Ret: %{{y:.1%}}<extra></extra>",
     ))
 
+    # Crea una copia del theme senza xaxis/yaxis per evitare conflitti
+    theme_copy = {k: v for k, v in CHART_THEME.items() if k not in ["xaxis", "yaxis"]}
+
     fig.update_layout(
-        **CHART_THEME,
+        **theme_copy,
         title=dict(text="Frontiera Efficiente di Markowitz", font=dict(size=14, weight=700), x=0),
         xaxis=dict(**CHART_THEME["xaxis"], title="Volatilità (Rischio)", tickformat=".0%"),
         yaxis=dict(**CHART_THEME["yaxis"], title="Rendimento Atteso", tickformat=".0%"),
@@ -240,8 +243,12 @@ def drawdown_chart(portfolio_value: pd.Series, height: int = 220) -> go.Figure:
         name="Drawdown",
         hovertemplate="%{y:.1f}%<extra></extra>",
     ))
+
+    # Crea una copia del theme senza yaxis per evitare conflitti
+    theme_copy = {k: v for k, v in CHART_THEME.items() if k != "yaxis"}
+
     fig.update_layout(
-        **CHART_THEME,
+        **theme_copy,
         title=dict(text="Drawdown", font=dict(size=12, weight=700), x=0),
         yaxis=dict(**CHART_THEME["yaxis"], title="%", ticksuffix="%"),
         height=height,
