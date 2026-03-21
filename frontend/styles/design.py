@@ -123,6 +123,46 @@ button[kind="primary"] {
     color: #0A1628 !important;
 }
 
+/* ===== LIGHT BACKGROUND BOXES - FORCE DARK TEXT ===== */
+/* Exception for light-colored info boxes with inline styles */
+/* These boxes need DARK text (#0A1628) instead of light text */
+
+/* Target divs with light backgrounds */
+.main div[style*="background:#d1fae5"],
+.main div[style*="background:#f0f9ff"],
+.main div[style*="background:#fff3cd"],
+.main div[style*="background:#fefce8"],
+.main div[style*="background:#fef3c7"],
+.main div[style*="background:#dbeafe"],
+.main div[style*="background:#dcfce7"],
+.main div[style*="background:#d1fae5;"],
+.main div[style*="background:#f0f9ff;"],
+.main div[style*="background:#fff3cd;"],
+.main div[style*="background:#fefce8;"],
+.main div[style*="background:#fef3c7;"],
+.main div[style*="background:#dbeafe;"],
+.main div[style*="background:#dcfce7;"] {
+    color: #0A1628 !important;
+}
+
+/* Also target ALL children elements inside light boxes */
+.main div[style*="background:#d1fae5"] *,
+.main div[style*="background:#f0f9ff"] *,
+.main div[style*="background:#fff3cd"] *,
+.main div[style*="background:#fefce8"] *,
+.main div[style*="background:#fef3c7"] *,
+.main div[style*="background:#dbeafe"] *,
+.main div[style*="background:#dcfce7"] *,
+.main div[style*="background:#d1fae5;"] *,
+.main div[style*="background:#f0f9ff;"] *,
+.main div[style*="background:#fff3cd;"] *,
+.main div[style*="background:#fefce8;"] *,
+.main div[style*="background:#fef3c7;"] *,
+.main div[style*="background:#dbeafe;"] *,
+.main div[style*="background:#dcfce7;"] * {
+    color: #0A1628 !important;
+}
+
 /* Keep Streamlit header visible for sidebar toggle */
 header[data-testid="stHeader"] {
     background: transparent !important;
