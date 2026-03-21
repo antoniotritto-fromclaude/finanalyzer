@@ -195,15 +195,15 @@ def render():
     st.markdown('<h1 style="color:#FFFFFF !important;font-size:2.5rem;font-weight:800;margin-bottom:20px;">🔍 Screener - Selezione Titoli</h1>', unsafe_allow_html=True)
 
     st.markdown("""
-    <div class="fin-card" style="background:#f0f9ff;border-left:4px solid #2471c8;padding:16px;">
+    <div class="fin-card" style="background:#f0f9ff;border-left:4px solid #2471c8;padding:16px;color:#0A1628 !important;">
         <b>💡 Come funziona:</b>
-        <ol style="margin:8px 0 0 0;padding-left:20px;">
+        <ol style="margin:8px 0 0 0;padding-left:20px;color:#0A1628 !important;">
             <li>Cerca un simbolo manualmente OPPURE</li>
             <li>Seleziona da liste predefinite (Azioni, ETF, Commodities, Crypto)</li>
             <li>Clicca "➕ Aggiungi" per inserire nel portafoglio</li>
             <li>Vai su <b>Portafoglio</b> per gestire e ottimizzare</li>
         </ol>
-        <div style="margin-top:12px;padding:10px;background:#d1fae5;border-radius:8px;font-size:0.88rem;">
+        <div style="margin-top:12px;padding:10px;background:#d1fae5;border-radius:8px;font-size:0.88rem;color:#0A1628 !important;">
             ✅ <b>Supporto MULTI-FONTE per massima copertura!</b>
             <br>💡 <b>Puoi aggiungere:</b>
             <br>&nbsp;&nbsp;&nbsp;• <b>Ticker</b> Yahoo Finance → AAPL, SPY, VWCE.DE, BTC-USD
@@ -298,9 +298,9 @@ def render():
     # ═══════════════════════════════════════════════════════════════
     with st.expander("📝 Inserimento Manuale Fondo (se scraping fallisce)", expanded=False):
         st.markdown("""
-        <div style="padding:12px;background:#fff3cd;border-left:4px solid #ffc107;border-radius:8px;margin-bottom:16px;">
+        <div style="padding:12px;background:#fff3cd;border-left:4px solid #ffc107;border-radius:8px;margin-bottom:16px;color:#0A1628 !important;">
             <b>💡 Usa questo form se:</b>
-            <ul style="margin:8px 0 0 0;">
+            <ul style="margin:8px 0 0 0;color:#0A1628 !important;">
                 <li>Lo scraping automatico fallisce</li>
                 <li>Vuoi aggiungere un fondo con dati custom</li>
                 <li>Il fondo non è disponibile su Morningstar/Investing/Quantalys</li>

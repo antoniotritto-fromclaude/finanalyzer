@@ -55,7 +55,7 @@ def render():
 
     # Info fonti dati
     st.markdown("""
-    <div class="fin-card" style="background:#f0f9ff;border-left:4px solid #0ea5c9;padding:14px 18px;">
+    <div class="fin-card" style="background:#f0f9ff;border-left:4px solid #0ea5c9;padding:14px 18px;color:#0A1628 !important;">
         <b>📈 Fonti Dati:</b> Questa analisi utilizza dati da <b>Yahoo Finance</b> in tempo reale.
         Include prezzi, metriche fondamentali, grafici storici e statistiche di rendimento.
         <br><br>
