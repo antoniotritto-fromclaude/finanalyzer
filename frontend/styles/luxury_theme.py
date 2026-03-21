@@ -532,3 +532,85 @@ def get_chart_theme():
 def get_colors():
     """Restituisce la palette colori"""
     return COLORS.copy()
+
+
+def get_print_chart_theme():
+    """
+    Restituisce tema Plotly PRINT-FRIENDLY per report PDF/HTML
+
+    - Sfondo bianco
+    - Testo nero/scuro
+    - Ottimizzato per stampa su carta bianca
+    """
+    return {
+        "paper_bgcolor": "white",
+        "plot_bgcolor": "#F9FAFB",  # Grigio chiarissimo
+
+        "font": {
+            "family": "Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
+            "size": 13,
+            "color": "#0A1628",  # NERO scuro per leggibilità
+        },
+
+        "margin": {
+            "l": 60,
+            "r": 40,
+            "t": 80,
+            "b": 60,
+        },
+
+        "xaxis": {
+            "showgrid": False,
+            "gridcolor": "#E5E7EB",
+            "gridwidth": 1,
+            "zeroline": False,
+            "linecolor": "#9CA3AF",
+            "linewidth": 2,
+            "tickfont": {
+                "family": "Inter, sans-serif",
+                "size": 11,
+                "color": "#374151",  # Grigio scuro
+            },
+        },
+
+        "yaxis": {
+            "showgrid": True,
+            "gridcolor": "#E5E7EB",
+            "gridwidth": 1,
+            "zeroline": False,
+            "linecolor": "#9CA3AF",
+            "linewidth": 2,
+            "tickfont": {
+                "family": "'SF Mono', 'Roboto Mono', monospace",
+                "size": 11,
+                "color": "#374151",  # Grigio scuro
+            },
+        },
+
+        "legend": {
+            "bgcolor": "white",
+            "bordercolor": "#D1D5DB",
+            "borderwidth": 1,
+            "font": {
+                "family": "Inter, sans-serif",
+                "size": 12,
+                "color": "#0A1628",  # NERO scuro (NON bianco!)
+            },
+            "orientation": "h",
+            "yanchor": "bottom",
+            "y": 1.02,
+            "xanchor": "right",
+            "x": 1,
+        },
+
+        "hovermode": "x unified",
+        "hoverlabel": {
+            "bgcolor": "white",
+            "bordercolor": "#9CA3AF",
+            "font": {
+                "family": "Inter, sans-serif",
+                "size": 12,
+                "color": "#0A1628",  # NERO scuro
+            },
+        },
+    }

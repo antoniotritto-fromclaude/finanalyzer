@@ -203,14 +203,17 @@ def render():
             <li>Clicca "➕ Aggiungi" per inserire nel portafoglio</li>
             <li>Vai su <b>Portafoglio</b> per gestire e ottimizzare</li>
         </ol>
-        <div style="margin-top:12px;padding:10px;background:#d1fae5;border-radius:8px;font-size:0.88rem;color:#0A1628 !important;">
-            ✅ <b>Supporto MULTI-FONTE per massima copertura!</b>
-            <br>💡 <b>Puoi aggiungere:</b>
-            <br>&nbsp;&nbsp;&nbsp;• <b>Ticker</b> Yahoo Finance → AAPL, SPY, VWCE.DE, BTC-USD
-            <br>&nbsp;&nbsp;&nbsp;• <b>ISIN</b> Morningstar/JustETF → LU2056383347, IE00B4L5Y983
-            <br>&nbsp;&nbsp;&nbsp;• <b>Link</b> Morningstar → https://morningstar.it/...
-            <br>&nbsp;&nbsp;&nbsp;• <b>Link</b> Investing.com → https://it.investing.com/equities/...
-            <br>📊 Cache 24h automatica | 🔄 Fallback multi-fonte per massima affidabilità
+        <div style="margin-top:12px;padding:10px;background:#d1fae5;border-radius:8px;font-size:0.88rem;">
+            <span style="display:inline-block;background:#0A1628;color:#10B981;padding:4px 10px;border-radius:6px;font-weight:700;">✅ Supporto MULTI-FONTE per massima copertura!</span>
+            <br><br>
+            <span style="display:inline-block;background:#1E293B;color:#F4C430;padding:3px 8px;border-radius:5px;font-weight:600;margin-bottom:6px;">💡 Puoi aggiungere:</span>
+            <br>&nbsp;&nbsp;&nbsp;• <b style="color:#0A1628 !important;">Ticker</b> <span style="color:#374151 !important;">Yahoo Finance → AAPL, SPY, VWCE.DE, BTC-USD</span>
+            <br>&nbsp;&nbsp;&nbsp;• <b style="color:#0A1628 !important;">ISIN</b> <span style="color:#374151 !important;">Morningstar/JustETF → LU2056383347, IE00B4L5Y983</span>
+            <br>&nbsp;&nbsp;&nbsp;• <b style="color:#0A1628 !important;">Link</b> <span style="color:#374151 !important;">Morningstar → https://morningstar.it/...</span>
+            <br>&nbsp;&nbsp;&nbsp;• <b style="color:#0A1628 !important;">Link</b> <span style="color:#374151 !important;">Investing.com → https://it.investing.com/equities/...</span>
+            <br><br>
+            <span style="display:inline-block;background:#1E293B;color:#FFFFFF;padding:3px 8px;border-radius:5px;font-size:0.85rem;margin-right:8px;">📊 Cache 24h automatica</span>
+            <span style="display:inline-block;background:#1E293B;color:#FFFFFF;padding:3px 8px;border-radius:5px;font-size:0.85rem;">🔄 Fallback multi-fonte</span>
         </div>
     </div>
     """, unsafe_allow_html=True)
@@ -298,12 +301,12 @@ def render():
     # ═══════════════════════════════════════════════════════════════
     with st.expander("📝 Inserimento Manuale Fondo (se scraping fallisce)", expanded=False):
         st.markdown("""
-        <div style="padding:12px;background:#fff3cd;border-left:4px solid #ffc107;border-radius:8px;margin-bottom:16px;color:#0A1628 !important;">
-            <b>💡 Usa questo form se:</b>
-            <ul style="margin:8px 0 0 0;color:#0A1628 !important;">
-                <li>Lo scraping automatico fallisce</li>
-                <li>Vuoi aggiungere un fondo con dati custom</li>
-                <li>Il fondo non è disponibile su Morningstar/Investing/Quantalys</li>
+        <div style="padding:12px;background:#fff3cd;border-left:4px solid #ffc107;border-radius:8px;margin-bottom:16px;">
+            <span style="display:inline-block;background:#92400E;color:#FCD34D;padding:4px 10px;border-radius:6px;font-weight:700;margin-bottom:8px;">💡 Usa questo form se:</span>
+            <ul style="margin:8px 0 0 20px;padding:0;">
+                <li><span style="color:#0A1628 !important;font-weight:500;">Lo scraping automatico fallisce</span></li>
+                <li><span style="color:#0A1628 !important;font-weight:500;">Vuoi aggiungere un fondo con dati custom</span></li>
+                <li><span style="color:#0A1628 !important;font-weight:500;">Il fondo non è disponibile su Morningstar/Investing/Quantalys</span></li>
             </ul>
         </div>
         """, unsafe_allow_html=True)

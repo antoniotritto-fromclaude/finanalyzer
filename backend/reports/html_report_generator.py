@@ -10,6 +10,12 @@ from typing import Dict, List, Optional
 import plotly.graph_objects as go
 import base64
 import io
+import sys
+from pathlib import Path
+
+# Add frontend to path to import theme
+sys.path.insert(0, str(Path(__file__).parent.parent.parent))
+from frontend.styles.luxury_theme import get_print_chart_theme
 
 
 # ══════════════════════════════════════════════════════════════════════
@@ -113,9 +119,12 @@ body {
     font-size: 2.5rem;
     font-weight: 800;
     color: #D4AF37;
+    background: linear-gradient(135deg, #0A1628 0%, #1E293B 100%);
+    padding: 20px 30px;
+    border-radius: 12px;
     margin-bottom: 30px;
-    padding-bottom: 15px;
-    border-bottom: 3px solid #D4AF37;
+    border-left: 4px solid #D4AF37;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
 }
 
 .section-content {
@@ -331,7 +340,12 @@ body {
 
 def fig_to_base64(fig: go.Figure, width: int = 1200, height: int = 600) -> str:
     """
-    Converte figura Plotly in base64 PNG
+    Converte figura Plotly in base64 PNG con tema PRINT-FRIENDLY
+
+    Applica automaticamente:
+    - Sfondo bianco
+    - Testo nero/scuro
+    - Legenda leggibile per stampa
 
     Args:
         fig: Figura Plotly
@@ -342,13 +356,34 @@ def fig_to_base64(fig: go.Figure, width: int = 1200, height: int = 600) -> str:
         str: Base64 encoded PNG
     """
     try:
-        # Usa kaleido per export statico
-        img_bytes = fig.to_image(format="png", width=width, height=height, scale=2)
+        # 🎨 APPLICA TEMA PRINT-FRIENDLY (sfondo bianco, testo nero)
+        print_theme = get_print_chart_theme()
+
+        # Crea copia del grafico per non modificare l'originale
+        fig_copy = go.Figure(fig)
+
+        # Applica tema print-friendly
+        fig_copy.update_layout(**print_theme)
+
+        # Mantieni il titolo originale se presente
+        if fig.layout.title.text:
+            fig_copy.update_layout(
+                title=dict(
+                    text=fig.layout.title.text,
+                    font=dict(size=16, weight=700, color="#0A1628"),
+                    x=0
+                )
+            )
+
+        # Esporta come PNG statico
+        img_bytes = fig_copy.to_image(format="png", width=width, height=height, scale=2)
         img_base64 = base64.b64encode(img_bytes).decode()
         return f"data:image/png;base64,{img_base64}"
     except Exception as e:
-        # Fallback: crea placeholder
-        return f"data:image/svg+xml;base64,{base64.b64encode(f'<svg width=\"{width}\" height=\"{height}\"><text x=\"50%\" y=\"50%\" text-anchor=\"middle\" fill=\"#999\">Chart: {str(e)}</text></svg>'.encode()).decode()}"
+        # Fallback: crea placeholder SVG
+        svg_content = f'<svg width="{width}" height="{height}"><text x="50%" y="50%" text-anchor="middle" fill="#999">Chart: {str(e)}</text></svg>'
+        svg_base64 = base64.b64encode(svg_content.encode()).decode()
+        return f"data:image/svg+xml;base64,{svg_base64}"
 
 
 # ══════════════════════════════════════════════════════════════════════

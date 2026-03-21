@@ -208,8 +208,10 @@ def render():
             ), unsafe_allow_html=True)
 
         st.markdown("""
-        <div class="fin-card" style="background:#fefce8;border-left:4px solid #f59e0b;margin-top:1rem;color:#0A1628 !important;">
-            <b>⚠️ Disclaimer:</b> Le predizioni sono basate su simulazioni statistiche dei dati storici.
-            Non costituiscono consulenza finanziaria. I rendimenti passati non garantiscono quelli futuri.
+        <div class="fin-card" style="background:#fefce8;border-left:4px solid #f59e0b;margin-top:1rem;padding:14px;">
+            <span style="display:inline-block;background:#92400E;color:#FCD34D;padding:4px 10px;border-radius:6px;font-weight:700;margin-bottom:8px;">⚠️ Disclaimer</span>
+            <br>
+            <span style="color:#0A1628 !important;font-weight:500;">Le predizioni sono basate su simulazioni statistiche dei dati storici.
+            Non costituiscono consulenza finanziaria. I rendimenti passati non garantiscono quelli futuri.</span>
         </div>
         """, unsafe_allow_html=True)
