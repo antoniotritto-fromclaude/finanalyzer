@@ -129,14 +129,14 @@ button[kind="primary"] {
 
 /* Target divs with light backgrounds */
 .main div[style*="background:#d1fae5"],
-.main div[style*="background:#f0f9ff"],
+.main div[style*="background:#b3d9ff"],
 .main div[style*="background:#fff3cd"],
 .main div[style*="background:#fefce8"],
 .main div[style*="background:#fef3c7"],
 .main div[style*="background:#dbeafe"],
 .main div[style*="background:#dcfce7"],
 .main div[style*="background:#d1fae5;"],
-.main div[style*="background:#f0f9ff;"],
+.main div[style*="background:#b3d9ff;"],
 .main div[style*="background:#fff3cd;"],
 .main div[style*="background:#fefce8;"],
 .main div[style*="background:#fef3c7;"],
@@ -147,14 +147,14 @@ button[kind="primary"] {
 
 /* Also target ALL children elements inside light boxes */
 .main div[style*="background:#d1fae5"] *,
-.main div[style*="background:#f0f9ff"] *,
+.main div[style*="background:#b3d9ff"] *,
 .main div[style*="background:#fff3cd"] *,
 .main div[style*="background:#fefce8"] *,
 .main div[style*="background:#fef3c7"] *,
 .main div[style*="background:#dbeafe"] *,
 .main div[style*="background:#dcfce7"] *,
 .main div[style*="background:#d1fae5;"] *,
-.main div[style*="background:#f0f9ff;"] *,
+.main div[style*="background:#b3d9ff;"] *,
 .main div[style*="background:#fff3cd;"] *,
 .main div[style*="background:#fefce8;"] *,
 .main div[style*="background:#fef3c7;"] *,

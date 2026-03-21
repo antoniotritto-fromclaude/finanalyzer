@@ -195,7 +195,7 @@ def render():
     st.markdown('<h1 style="color:#FFFFFF !important;font-size:2.5rem;font-weight:800;margin-bottom:20px;">🔍 Screener - Selezione Titoli</h1>', unsafe_allow_html=True)
 
     st.markdown("""
-    <div class="fin-card" style="background:#f0f9ff;border-left:4px solid #2471c8;padding:16px;color:#0A1628 !important;">
+    <div class="fin-card" style="background:#b3d9ff;border-left:4px solid #2471c8;padding:16px;color:#0A1628 !important;">
         <b>💡 Come funziona:</b>
         <ol style="margin:8px 0 0 0;padding-left:20px;color:#0A1628 !important;">
             <li>Cerca un simbolo manualmente OPPURE</li>
