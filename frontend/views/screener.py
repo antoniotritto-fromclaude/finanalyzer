@@ -206,12 +206,15 @@ def render():
         <div style="margin-top:12px;padding:10px;background:#d1fae5;border-radius:8px;font-size:0.88rem;">
             <span style="display:inline-block;background:#0A1628;color:#10B981;padding:4px 10px;border-radius:6px;font-weight:700;">✅ Supporto MULTI-FONTE per massima copertura!</span>
             <br><br>
-            <span style="display:inline-block;background:#1E293B;color:#F4C430;padding:3px 8px;border-radius:5px;font-weight:600;margin-bottom:6px;">💡 Puoi aggiungere:</span>
-            <br>&nbsp;&nbsp;&nbsp;• <b style="color:#0A1628 !important;">Ticker</b> <span style="color:#374151 !important;">Yahoo Finance → AAPL, SPY, VWCE.DE, BTC-USD</span>
-            <br>&nbsp;&nbsp;&nbsp;• <b style="color:#0A1628 !important;">ISIN</b> <span style="color:#374151 !important;">Morningstar/JustETF → LU2056383347, IE00B4L5Y983</span>
-            <br>&nbsp;&nbsp;&nbsp;• <b style="color:#0A1628 !important;">Link</b> <span style="color:#374151 !important;">Morningstar → https://morningstar.it/...</span>
-            <br>&nbsp;&nbsp;&nbsp;• <b style="color:#0A1628 !important;">Link</b> <span style="color:#374151 !important;">Investing.com → https://it.investing.com/equities/...</span>
-            <br><br>
+            <!-- Box blu scuro con la lista -->
+            <div style="background:#2F5F7F;padding:12px 16px;border-radius:8px;border-left:4px solid #D4AF37;">
+                <span style="display:inline-block;background:#1E293B;color:#F4C430;padding:3px 8px;border-radius:5px;font-weight:600;margin-bottom:10px;">💡 Puoi aggiungere:</span>
+                <br>&nbsp;&nbsp;&nbsp;• <b style="color:#FFFFFF !important;">Ticker</b> <span style="color:#E5E7EB !important;">Yahoo Finance → AAPL, SPY, VWCE.DE, BTC-USD</span>
+                <br>&nbsp;&nbsp;&nbsp;• <b style="color:#FFFFFF !important;">ISIN</b> <span style="color:#E5E7EB !important;">Morningstar/JustETF → LU2056383347, IE00B4L5Y983</span>
+                <br>&nbsp;&nbsp;&nbsp;• <b style="color:#FFFFFF !important;">Link</b> <span style="color:#E5E7EB !important;">Morningstar → https://morningstar.it/...</span>
+                <br>&nbsp;&nbsp;&nbsp;• <b style="color:#FFFFFF !important;">Link</b> <span style="color:#E5E7EB !important;">Investing.com → https://it.investing.com/equities/...</span>
+            </div>
+            <br>
             <span style="display:inline-block;background:#1E293B;color:#FFFFFF;padding:3px 8px;border-radius:5px;font-size:0.85rem;margin-right:8px;">📊 Cache 24h automatica</span>
             <span style="display:inline-block;background:#1E293B;color:#FFFFFF;padding:3px 8px;border-radius:5px;font-size:0.85rem;">🔄 Fallback multi-fonte</span>
         </div>
