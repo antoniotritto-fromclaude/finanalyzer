@@ -501,6 +501,21 @@ def render():
     # ═══════════════════════════════════════════════════════════════
     st.markdown('<h2 style="color:#FFFFFF !important;font-size:1.8rem;font-weight:800;margin:40px 0 20px 0;padding-bottom:12px;border-bottom:2px solid #D4AF37;">⚡ Selezione Rapida</h2>', unsafe_allow_html=True)
 
+    # Info box con categorie disponibili
+    st.markdown("""
+    <div style="background:#2F5F7F;padding:14px 18px;border-radius:8px;border-left:4px solid #D4AF37;margin-bottom:20px;">
+        <span style="color:#FFFFFF;font-weight:600;font-size:0.9rem;">📂 Categorie disponibili:</span>
+        <br><br>
+        <div style="display:flex;flex-wrap:wrap;gap:12px;">
+            <span style="display:inline-block;background:#1E293B;color:#FFFFFF;padding:6px 14px;border-radius:6px;font-weight:600;font-size:0.85rem;">📈 Azioni</span>
+            <span style="display:inline-block;background:#1E293B;color:#FFFFFF;padding:6px 14px;border-radius:6px;font-weight:600;font-size:0.85rem;">📡 ETF</span>
+            <span style="display:inline-block;background:#1E293B;color:#FFFFFF;padding:6px 14px;border-radius:6px;font-weight:600;font-size:0.85rem;">🏦 Fondi</span>
+            <span style="display:inline-block;background:#1E293B;color:#FFFFFF;padding:6px 14px;border-radius:6px;font-weight:600;font-size:0.85rem;">🌾 Commodities</span>
+            <span style="display:inline-block;background:#1E293B;color:#FFFFFF;padding:6px 14px;border-radius:6px;font-weight:600;font-size:0.85rem;">💰 Crypto</span>
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
+
     tab_stocks, tab_etf, tab_fondi, tab_comm, tab_crypto = st.tabs([
         "📈 Azioni", "📡 ETF", "🏦 Fondi", "🌾 Commodities", "💰 Crypto"
     ])
