@@ -129,14 +129,12 @@ button[kind="primary"] {
 
 /* Target divs with light backgrounds */
 .main div[style*="background:#d1fae5"],
-.main div[style*="background:#b3d9ff"],
 .main div[style*="background:#fff3cd"],
 .main div[style*="background:#fefce8"],
 .main div[style*="background:#fef3c7"],
 .main div[style*="background:#dbeafe"],
 .main div[style*="background:#dcfce7"],
 .main div[style*="background:#d1fae5;"],
-.main div[style*="background:#b3d9ff;"],
 .main div[style*="background:#fff3cd;"],
 .main div[style*="background:#fefce8;"],
 .main div[style*="background:#fef3c7;"],
@@ -147,20 +145,29 @@ button[kind="primary"] {
 
 /* Also target ALL children elements inside light boxes */
 .main div[style*="background:#d1fae5"] *,
-.main div[style*="background:#b3d9ff"] *,
 .main div[style*="background:#fff3cd"] *,
 .main div[style*="background:#fefce8"] *,
 .main div[style*="background:#fef3c7"] *,
 .main div[style*="background:#dbeafe"] *,
 .main div[style*="background:#dcfce7"] *,
 .main div[style*="background:#d1fae5;"] *,
-.main div[style*="background:#b3d9ff;"] *,
 .main div[style*="background:#fff3cd;"] *,
 .main div[style*="background:#fefce8;"] *,
 .main div[style*="background:#fef3c7;"] *,
 .main div[style*="background:#dbeafe;"] *,
 .main div[style*="background:#dcfce7;"] * {
     color: #0A1628 !important;
+}
+
+/* Dark background boxes - force WHITE text */
+.main div[style*="background:#2F5F7F"],
+.main div[style*="background:#2F5F7F;"] {
+    color: #FFFFFF !important;
+}
+
+.main div[style*="background:#2F5F7F"] *,
+.main div[style*="background:#2F5F7F;"] * {
+    color: #FFFFFF !important;
 }
 
 /* Keep Streamlit header visible for sidebar toggle */

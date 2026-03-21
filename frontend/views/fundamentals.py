@@ -55,13 +55,13 @@ def render():
 
     # Info fonti dati
     st.markdown("""
-    <div class="fin-card" style="background:#b3d9ff;border-left:4px solid #0ea5c9;padding:14px 18px;color:#0A1628 !important;">
-        <b>📈 Fonti Dati:</b> Questa analisi utilizza dati da <b>Yahoo Finance</b> in tempo reale.
-        Include prezzi, metriche fondamentali, grafici storici e statistiche di rendimento.
+    <div class="fin-card" style="background:#2F5F7F;border-left:4px solid #D4AF37;padding:14px 18px;color:#FFFFFF !important;">
+        <b style="color:#FFFFFF !important;">📈 Fonti Dati:</b> <span style="color:#FFFFFF !important;">Questa analisi utilizza dati da <b>Yahoo Finance</b> in tempo reale.
+        Include prezzi, metriche fondamentali, grafici storici e statistiche di rendimento.</span>
         <br><br>
-        💡 <b>Nota:</b> Titoli USA (AAPL, MSFT) hanno dati più completi.
+        <span style="color:#FFFFFF !important;">💡 <b>Nota:</b> Titoli USA (AAPL, MSFT) hanno dati più completi.
         Titoli internazionali (es. *.MI, *.DE) potrebbero mostrare solo prezzi e grafici.
-        Per fondi usa <b>Screener</b> con codici ISIN.
+        Per fondi usa <b>Screener</b> con codici ISIN.</span>
     </div>
     """, unsafe_allow_html=True)
 

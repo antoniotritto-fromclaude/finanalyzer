@@ -195,13 +195,13 @@ def render():
     st.markdown('<h1 style="color:#FFFFFF !important;font-size:2.5rem;font-weight:800;margin-bottom:20px;">🔍 Screener - Selezione Titoli</h1>', unsafe_allow_html=True)
 
     st.markdown("""
-    <div class="fin-card" style="background:#b3d9ff;border-left:4px solid #2471c8;padding:16px;color:#0A1628 !important;">
-        <b>💡 Come funziona:</b>
-        <ol style="margin:8px 0 0 0;padding-left:20px;color:#0A1628 !important;">
-            <li>Cerca un simbolo manualmente OPPURE</li>
-            <li>Seleziona da liste predefinite (Azioni, ETF, Commodities, Crypto)</li>
-            <li>Clicca "➕ Aggiungi" per inserire nel portafoglio</li>
-            <li>Vai su <b>Portafoglio</b> per gestire e ottimizzare</li>
+    <div class="fin-card" style="background:#2F5F7F;border-left:4px solid #D4AF37;padding:16px;color:#FFFFFF !important;">
+        <b style="color:#FFFFFF !important;">💡 Come funziona:</b>
+        <ol style="margin:8px 0 0 0;padding-left:20px;color:#FFFFFF !important;">
+            <li style="color:#FFFFFF !important;">Cerca un simbolo manualmente OPPURE</li>
+            <li style="color:#FFFFFF !important;">Seleziona da liste predefinite (Azioni, ETF, Commodities, Crypto)</li>
+            <li style="color:#FFFFFF !important;">Clicca "➕ Aggiungi" per inserire nel portafoglio</li>
+            <li style="color:#FFFFFF !important;">Vai su <b>Portafoglio</b> per gestire e ottimizzare</li>
         </ol>
         <div style="margin-top:12px;padding:10px;background:#d1fae5;border-radius:8px;font-size:0.88rem;">
             <span style="display:inline-block;background:#0A1628;color:#10B981;padding:4px 10px;border-radius:6px;font-weight:700;">✅ Supporto MULTI-FONTE per massima copertura!</span>
