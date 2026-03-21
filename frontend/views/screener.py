@@ -192,7 +192,7 @@ def _add_to_portfolio(symbol):
 
 
 def render():
-    st.title("🔍 Screener - Selezione Titoli")
+    st.markdown('<h1 style="color:#FFFFFF !important;font-size:2.5rem;font-weight:800;margin-bottom:20px;">🔍 Screener - Selezione Titoli</h1>', unsafe_allow_html=True)
 
     st.markdown("""
     <div class="fin-card" style="background:#f0f9ff;border-left:4px solid #2471c8;padding:16px;">
@@ -264,7 +264,7 @@ def render():
     # ═══════════════════════════════════════════════════════════════
     # RICERCA MANUALE
     # ═══════════════════════════════════════════════════════════════
-    st.subheader("🔎 Ricerca Manuale")
+    st.markdown('<h2 style="color:#FFFFFF !important;font-size:1.8rem;font-weight:800;margin:40px 0 20px 0;padding-bottom:12px;border-bottom:2px solid #D4AF37;">🔎 Ricerca Manuale</h2>', unsafe_allow_html=True)
 
     col1, col2 = st.columns([4, 1])
     with col1:
@@ -493,7 +493,7 @@ def render():
     # ═══════════════════════════════════════════════════════════════
     # SELEZIONE RAPIDA
     # ═══════════════════════════════════════════════════════════════
-    st.subheader("⚡ Selezione Rapida")
+    st.markdown('<h2 style="color:#FFFFFF !important;font-size:1.8rem;font-weight:800;margin:40px 0 20px 0;padding-bottom:12px;border-bottom:2px solid #D4AF37;">⚡ Selezione Rapida</h2>', unsafe_allow_html=True)
 
     tab_stocks, tab_etf, tab_fondi, tab_comm, tab_crypto = st.tabs([
         "📈 Azioni", "📡 ETF", "🏦 Fondi", "🌾 Commodities", "💰 Crypto"
@@ -612,7 +612,7 @@ def render():
 
     if current_pf:
         st.markdown("---")
-        st.subheader(f"💼 Portafoglio Corrente ({len(current_pf)} titoli)")
+        st.markdown(f'<h2 style="color:#FFFFFF !important;font-size:1.8rem;font-weight:800;margin:40px 0 20px 0;padding-bottom:12px;border-bottom:2px solid #D4AF37;">💼 Portafoglio Corrente ({len(current_pf)} titoli)</h2>', unsafe_allow_html=True)
         st.markdown(" · ".join([f"`{s}`" for s in current_pf]))
         st.info("💡 Vai su **Portafoglio** per gestire pesi e ottimizzazione")
     else:

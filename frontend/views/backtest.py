@@ -33,7 +33,7 @@ def _metric_html(label, value, sub="", color="#2471c8"):
 
 
 def render():
-    st.title("📈 Backtest Storico")
+    st.markdown('<h1 style="color:#FFFFFF !important;font-size:2.5rem;font-weight:800;margin-bottom:20px;">📈 Backtest Storico</h1>', unsafe_allow_html=True)
     st.markdown("Testa le performance del tuo portafoglio su dati storici")
     st.markdown("---")
 
@@ -106,7 +106,7 @@ def render():
         # ── Risultati per periodo ─────────────────────────────────────────────
         for years in sorted(periods):
             st.markdown(f"<br>", unsafe_allow_html=True)
-            st.subheader(f"📅 Backtest – {years} Anno{'i' if years>1 else ''}")
+            st.markdown(f'<h2 style="color:#FFFFFF !important;font-size:1.8rem;font-weight:800;margin:40px 0 20px 0;padding-bottom:12px;border-bottom:2px solid #D4AF37;">📅 Backtest – {years} Anno{"i" if years>1 else ""}</h2>', unsafe_allow_html=True)
 
             try:
                 result = engine.backtest_portfolio(
@@ -143,7 +143,7 @@ def render():
                         st.markdown(_metric_html(lbl, val, color="#2471c8"), unsafe_allow_html=True)
 
                 # ── Grafico portafoglio totale ────────────────────────────────────────
-                st.markdown("#### 📊 Andamento Portafoglio Totale")
+                st.markdown('<h4 style="color:#FFFFFF !important;font-size:1.3rem;font-weight:700;margin:20px 0 10px 0;">📊 Andamento Portafoglio Totale</h4>', unsafe_allow_html=True)
                 pv = pd.Series(result["portfolio_value_over_time"])
                 pv.index = pd.to_datetime(list(result["portfolio_value_over_time"].keys()))
                 pv_df = pd.DataFrame({"Portafoglio Totale": pv})
@@ -164,7 +164,7 @@ def render():
 
                 # ── Grafico componenti individuali ────────────────────────────────────
                 st.markdown("<br>", unsafe_allow_html=True)
-                st.markdown("#### 📈 Performance Componenti Individuali")
+                st.markdown('<h4 style="color:#FFFFFF !important;font-size:1.3rem;font-weight:700;margin:20px 0 10px 0;">📈 Performance Componenti Individuali</h4>', unsafe_allow_html=True)
 
                 st.info(f"""
                 **💡 Come viene calcolato il portafoglio totale:**

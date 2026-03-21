@@ -113,11 +113,11 @@ def _load_asset_6m_data(symbol):
 
 
 def render():
-    st.title("📊 Dashboard Mercati")
+    st.markdown('<h1 style="color:#FFFFFF !important;font-size:2.5rem;font-weight:800;margin-bottom:20px;">📊 Dashboard Mercati</h1>', unsafe_allow_html=True)
     st.markdown("---")
 
     # ── Market Overview ────────────────────────────────────────────────────────
-    st.subheader("🌍 Mercati Principali – Dati Real-Time")
+    st.markdown('<h2 style="color:#FFFFFF !important;font-size:1.8rem;font-weight:800;margin:40px 0 20px 0;padding-bottom:12px;border-bottom:2px solid #D4AF37;">🌍 Mercati Principali – Dati Real-Time</h2>', unsafe_allow_html=True)
 
     with st.spinner("Caricamento indici..."):
         market_data = _load_market_indices()
@@ -143,7 +143,7 @@ def render():
     st.markdown("<br>", unsafe_allow_html=True)
 
     # ── Grafici 6 Mesi Asset ──────────────────────────────────────────────────
-    st.subheader("📈 Performance Ultimi 6 Mesi – Asset Globali")
+    st.markdown('<h2 style="color:#FFFFFF !important;font-size:1.8rem;font-weight:800;margin:40px 0 20px 0;padding-bottom:12px;border-bottom:2px solid #D4AF37;">📈 Performance Ultimi 6 Mesi – Asset Globali</h2>', unsafe_allow_html=True)
 
     with st.spinner("Caricamento dati asset..."):
         asset_data = {}
@@ -226,7 +226,7 @@ def render():
     st.markdown("<br>", unsafe_allow_html=True)
 
     # ── Settori Performance ───────────────────────────────────────────────────
-    st.subheader("🏭 Settori – Performance YTD")
+    st.markdown('<h2 style="color:#FFFFFF !important;font-size:1.8rem;font-weight:800;margin:40px 0 20px 0;padding-bottom:12px;border-bottom:2px solid #D4AF37;">🏭 Settori – Performance YTD</h2>', unsafe_allow_html=True)
     sectors = list(SECTOR_PERF.keys())
     values  = list(SECTOR_PERF.values())
     colors  = ["#22c55e" if v >= 0 else "#ef4444" for v in values]
@@ -238,7 +238,7 @@ def render():
     st.markdown("<br>", unsafe_allow_html=True)
 
     # ── Top Movers ────────────────────────────────────────────────────────────
-    st.subheader("🔥 Top Movers – Borsa Italiana")
+    st.markdown('<h2 style="color:#FFFFFF !important;font-size:1.8rem;font-weight:800;margin:40px 0 20px 0;padding-bottom:12px;border-bottom:2px solid #D4AF37;">🔥 Top Movers – Borsa Italiana</h2>', unsafe_allow_html=True)
 
     # Crea DataFrame dai dati
     df_movers = pd.DataFrame(TOP_MOVERS)
@@ -267,7 +267,7 @@ def render():
     st.markdown("<br>", unsafe_allow_html=True)
 
     # ── Quick Stats ────────────────────────────────────────────────────────────
-    st.subheader("📐 Indicatori Macro")
+    st.markdown('<h2 style="color:#FFFFFF !important;font-size:1.8rem;font-weight:800;margin:40px 0 20px 0;padding-bottom:12px;border-bottom:2px solid #D4AF37;">📐 Indicatori Macro</h2>', unsafe_allow_html=True)
     mc = st.columns(6)
     macros = [
         ("Inflazione IT","5.9%","▼ -0.3pp","neg"),

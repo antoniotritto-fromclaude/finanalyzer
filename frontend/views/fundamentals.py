@@ -51,7 +51,7 @@ def _metric_card(label: str, value: str, sub: str = "", color: str = "#2471c8"):
 
 
 def render():
-    st.title("📊 Analisi Fondamentale")
+    st.markdown('<h1 style="color:#FFFFFF !important;font-size:2.5rem;font-weight:800;margin-bottom:20px;">📊 Analisi Fondamentale</h1>', unsafe_allow_html=True)
 
     # Info fonti dati
     st.markdown("""
@@ -178,7 +178,7 @@ def render():
 
     # ── Statistiche rendimento ────────────────────────────────────────────────
     st.markdown("<br>", unsafe_allow_html=True)
-    st.subheader("📐 Analisi Rendimento")
+    st.markdown('<h2 style="color:#FFFFFF !important;font-size:1.8rem;font-weight:800;margin:40px 0 20px 0;padding-bottom:12px;border-bottom:2px solid #D4AF37;">📐 Analisi Rendimento</h2>', unsafe_allow_html=True)
 
     rets = hist_1y["Close"].pct_change().dropna()
     ann_ret = rets.mean() * 252

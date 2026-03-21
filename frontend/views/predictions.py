@@ -31,7 +31,7 @@ def _metric_html(label, value, sub="", color="#2471c8"):
 
 
 def render():
-    st.title("🔮 Predizioni Future")
+    st.markdown('<h1 style="color:#FFFFFF !important;font-size:2.5rem;font-weight:800;margin-bottom:20px;">🔮 Predizioni Future</h1>', unsafe_allow_html=True)
     st.markdown("Simulazioni Monte Carlo per prevedere scenari futuri del portafoglio")
     st.markdown("---")
 
@@ -96,7 +96,7 @@ def render():
 
         # ── Scenari principali ────────────────────────────────────────────────
         st.markdown("<br>", unsafe_allow_html=True)
-        st.subheader(f"📊 Scenari a {months} Mesi")
+        st.markdown(f'<h2 style="color:#FFFFFF !important;font-size:1.8rem;font-weight:800;margin:40px 0 20px 0;padding-bottom:12px;border-bottom:2px solid #D4AF37;">📊 Scenari a {months} Mesi</h2>', unsafe_allow_html=True)
 
         sc1, sc2, sc3 = st.columns(3)
         with sc1:
@@ -164,7 +164,7 @@ def render():
 
         # ── Statistiche ───────────────────────────────────────────────────────
         st.markdown("<br>", unsafe_allow_html=True)
-        st.subheader("📐 Statistiche Predittive")
+        st.markdown('<h2 style="color:#FFFFFF !important;font-size:1.8rem;font-weight:800;margin:40px 0 20px 0;padding-bottom:12px;border-bottom:2px solid #D4AF37;">📐 Statistiche Predittive</h2>', unsafe_allow_html=True)
 
         stats = scenarios["statistics"]
         sc_cols = st.columns(4)
@@ -182,7 +182,7 @@ def render():
 
         # ── VaR ───────────────────────────────────────────────────────────────
         st.markdown("<br>", unsafe_allow_html=True)
-        st.subheader("⚠️ Value at Risk (VaR) – 1 Giorno")
+        st.markdown('<h2 style="color:#FFFFFF !important;font-size:1.8rem;font-weight:800;margin:40px 0 20px 0;padding-bottom:12px;border-bottom:2px solid #D4AF37;">⚠️ Value at Risk (VaR) – 1 Giorno</h2>', unsafe_allow_html=True)
         v1, v2, v3 = st.columns(3)
         with v1:
             st.markdown(_metric_html(
