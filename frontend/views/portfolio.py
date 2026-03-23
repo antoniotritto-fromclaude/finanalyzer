@@ -252,6 +252,37 @@ def render():
             st.session_state["pf_weights"] = {}
             st.rerun()
 
+    # ── Save Portfolio ────────────────────────────────────────────────
+    st.markdown("<br>", unsafe_allow_html=True)
+
+    save_cols = st.columns([3, 1])
+
+    with save_cols[0]:
+        portfolio_name = st.text_input(
+            "💾 Nome Portafoglio",
+            placeholder="es: Portafoglio Difensivo, Tech Growth, etc.",
+            key="portfolio_name_input"
+        ).strip()
+
+    with save_cols[1]:
+        st.markdown("<br>", unsafe_allow_html=True)
+        if st.button("💾 Salva Portafoglio", type="secondary", width="stretch"):
+            if portfolio_name and st.session_state["pf_symbols"]:
+                if "saved_portfolios" not in st.session_state:
+                    st.session_state.saved_portfolios = {}
+
+                st.session_state.saved_portfolios[portfolio_name] = {
+                    "symbols": st.session_state["pf_symbols"].copy(),
+                    "weights": st.session_state.get("pf_weights", {}).copy(),
+                    "created_at": datetime.now().strftime("%Y-%m-%d %H:%M")
+                }
+                st.success(f"✅ Portafoglio '{portfolio_name}' salvato con successo!")
+                st.rerun()
+            elif not portfolio_name:
+                st.warning("⚠️ Inserisci un nome per il portafoglio")
+            elif not st.session_state["pf_symbols"]:
+                st.warning("⚠️ Aggiungi almeno un asset prima di salvare")
+
     # ── Current Portfolio ─────────────────────────────────────────────
     symbols = st.session_state["pf_symbols"]
 

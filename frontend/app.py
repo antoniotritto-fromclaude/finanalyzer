@@ -61,33 +61,32 @@ with st.sidebar:
 
     st.markdown("<hr style='border-color:rgba(255,255,255,0.1);margin:16px 0;'>", unsafe_allow_html=True)
 
-    # Fonti dati
+    # Fonti dati (collapsabile)
     st.markdown("""
-    <div style="padding:0 4px;">
-        <div style="font-size:0.68rem;font-weight:700;color:#7fb3d3;text-transform:uppercase;
-                    letter-spacing:0.8px;margin-bottom:8px;">Fonti Dati</div>
+    <div style="font-size:0.68rem;font-weight:700;color:#7fb3d3;text-transform:uppercase;
+                letter-spacing:0.8px;margin-bottom:8px;padding:0 4px;">📈 Fonti Dati</div>
     """, unsafe_allow_html=True)
 
-    sources = [
-        ("📈", "Yahoo Finance", "#22c55e"),
-        ("🌐", "Morningstar IT", "#22c55e"),
-        ("📡", "JustETF", "#22c55e"),
-        ("📊", "Quantalys", "#22c55e"),
-        ("💹", "Investing.com", "#22c55e"),
-        ("📉", "TradingView", "#22c55e"),
-        ("🎯", "FINVIZ", "#22c55e"),
-    ]
-    for icon, name, color in sources:
-        st.markdown(f"""
-        <div style="display:flex;align-items:center;gap:8px;padding:4px 0;">
-            <span style="font-size:0.9rem;">{icon}</span>
-            <span style="font-size:0.78rem;color:#c8ddf5;">{name}</span>
-            <span style="margin-left:auto;width:8px;height:8px;border-radius:50%;
-                         background:{color};display:inline-block;"></span>
-        </div>
-        """, unsafe_allow_html=True)
+    with st.expander("Visualizza fonti", expanded=False):
+        sources = [
+            ("📈", "Yahoo Finance", "#22c55e"),
+            ("🌐", "Morningstar IT", "#22c55e"),
+            ("📡", "JustETF", "#22c55e"),
+            ("📊", "Quantalys", "#22c55e"),
+            ("💹", "Investing.com", "#22c55e"),
+            ("📉", "TradingView", "#22c55e"),
+            ("🎯", "FINVIZ", "#22c55e"),
+        ]
+        for icon, name, color in sources:
+            st.markdown(f"""
+            <div style="display:flex;align-items:center;gap:8px;padding:4px 0;">
+                <span style="font-size:0.9rem;">{icon}</span>
+                <span style="font-size:0.78rem;color:#c8ddf5;">{name}</span>
+                <span style="margin-left:auto;width:8px;height:8px;border-radius:50%;
+                             background:{color};display:inline-block;"></span>
+            </div>
+            """, unsafe_allow_html=True)
 
-    st.markdown("</div>", unsafe_allow_html=True)
     st.markdown("<hr style='border-color:rgba(255,255,255,0.1);margin:16px 0;'>", unsafe_allow_html=True)
 
     # Portafoglio corrente
@@ -95,12 +94,42 @@ with st.sidebar:
     st.markdown(f"""
     <div style="padding:0 4px;">
         <div style="font-size:0.68rem;font-weight:700;color:#7fb3d3;text-transform:uppercase;
-                    letter-spacing:0.8px;margin-bottom:8px;">Portafoglio Corrente</div>
+                    letter-spacing:0.8px;margin-bottom:8px;">💼 Portafoglio Corrente</div>
         <div style="font-size:0.8rem;color:#e0edf8;">
             {'<br>'.join([f'· {s}' for s in pf]) if pf else '<span style="color:#7fb3d3;font-style:italic;">Nessun titolo</span>'}
         </div>
     </div>
     """, unsafe_allow_html=True)
+
+    st.markdown("<br>", unsafe_allow_html=True)
+
+    # Portafogli salvati
+    if "saved_portfolios" not in st.session_state:
+        st.session_state.saved_portfolios = {}
+
+    saved_pf = st.session_state.saved_portfolios
+
+    st.markdown("""
+    <div style="padding:0 4px;">
+        <div style="font-size:0.68rem;font-weight:700;color:#7fb3d3;text-transform:uppercase;
+                    letter-spacing:0.8px;margin-bottom:8px;">📂 Portafogli Creati</div>
+    </div>
+    """, unsafe_allow_html=True)
+
+    if saved_pf:
+        for pf_name, pf_data in saved_pf.items():
+            num_assets = len(pf_data.get("symbols", []))
+            if st.button(f"📊 {pf_name} ({num_assets} titoli)", key=f"load_pf_{pf_name}", use_container_width=True):
+                st.session_state.pf_symbols = pf_data.get("symbols", [])
+                st.rerun()
+    else:
+        st.markdown("""
+        <div style="padding:0 4px;">
+            <div style="font-size:0.75rem;color:#7fb3d3;font-style:italic;">
+                Nessun portafoglio salvato
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
 
 # ── Top Header ────────────────────────────────────────────────────────────────
 from datetime import datetime
