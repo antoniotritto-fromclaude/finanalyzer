@@ -304,12 +304,12 @@ def render():
     # ═══════════════════════════════════════════════════════════════
     with st.expander("📝 Inserimento Manuale Fondo (se scraping fallisce)", expanded=False):
         st.markdown("""
-        <div style="padding:12px;background:#fff3cd;border-left:4px solid #ffc107;border-radius:8px;margin-bottom:16px;">
-            <span style="display:inline-block;background:#92400E;color:#FCD34D;padding:4px 10px;border-radius:6px;font-weight:700;margin-bottom:8px;">💡 Usa questo form se:</span>
-            <ul style="margin:8px 0 0 20px;padding:0;">
-                <li><span style="color:#0A1628 !important;font-weight:500;">Lo scraping automatico fallisce</span></li>
-                <li><span style="color:#0A1628 !important;font-weight:500;">Vuoi aggiungere un fondo con dati custom</span></li>
-                <li><span style="color:#0A1628 !important;font-weight:500;">Il fondo non è disponibile su Morningstar/Investing/Quantalys</span></li>
+        <div style="padding:16px;background:#1E3A44;border-left:4px solid #D4AF37;border-radius:8px;margin-bottom:16px;">
+            <span style="display:inline-block;background:#2F5F7F;color:#FFFFFF;padding:6px 14px;border-radius:6px;font-weight:700;margin-bottom:10px;">💡 Usa questo form se:</span>
+            <ul style="margin:10px 0 0 20px;padding:0;">
+                <li><span style="color:#E5E7EB !important;font-weight:500;">Lo scraping automatico fallisce</span></li>
+                <li><span style="color:#E5E7EB !important;font-weight:500;">Vuoi aggiungere un fondo con dati custom</span></li>
+                <li><span style="color:#E5E7EB !important;font-weight:500;">Il fondo non è disponibile su Morningstar/Investing/Quantalys</span></li>
             </ul>
         </div>
         """, unsafe_allow_html=True)
@@ -504,14 +504,14 @@ def render():
     # Info box con categorie disponibili
     st.markdown("""
     <div style="background:#2F5F7F;padding:14px 18px;border-radius:8px;border-left:4px solid #D4AF37;margin-bottom:20px;">
-        <span style="color:#FFFFFF;font-weight:600;font-size:0.9rem;">📂 Categorie disponibili:</span>
+        <span style="color:#FFFFFF !important;font-weight:600;font-size:0.9rem;">📂 Categorie disponibili:</span>
         <br><br>
         <div style="display:flex;flex-wrap:wrap;gap:12px;">
-            <span style="display:inline-block;background:#1E293B;color:#FFFFFF;padding:6px 14px;border-radius:6px;font-weight:600;font-size:0.85rem;">📈 Azioni</span>
-            <span style="display:inline-block;background:#1E293B;color:#FFFFFF;padding:6px 14px;border-radius:6px;font-weight:600;font-size:0.85rem;">📡 ETF</span>
-            <span style="display:inline-block;background:#1E293B;color:#FFFFFF;padding:6px 14px;border-radius:6px;font-weight:600;font-size:0.85rem;">🏦 Fondi</span>
-            <span style="display:inline-block;background:#1E293B;color:#FFFFFF;padding:6px 14px;border-radius:6px;font-weight:600;font-size:0.85rem;">🌾 Commodities</span>
-            <span style="display:inline-block;background:#1E293B;color:#FFFFFF;padding:6px 14px;border-radius:6px;font-weight:600;font-size:0.85rem;">💰 Crypto</span>
+            <span style="display:inline-block;background:#1E293B;color:#FFFFFF !important;padding:6px 14px;border-radius:6px;font-weight:600;font-size:0.85rem;">📈 Azioni</span>
+            <span style="display:inline-block;background:#1E293B;color:#FFFFFF !important;padding:6px 14px;border-radius:6px;font-weight:600;font-size:0.85rem;">📡 ETF</span>
+            <span style="display:inline-block;background:#1E293B;color:#FFFFFF !important;padding:6px 14px;border-radius:6px;font-weight:600;font-size:0.85rem;">🏦 Fondi</span>
+            <span style="display:inline-block;background:#1E293B;color:#FFFFFF !important;padding:6px 14px;border-radius:6px;font-weight:600;font-size:0.85rem;">🌾 Commodities</span>
+            <span style="display:inline-block;background:#1E293B;color:#FFFFFF !important;padding:6px 14px;border-radius:6px;font-weight:600;font-size:0.85rem;">💰 Crypto</span>
         </div>
     </div>
     """, unsafe_allow_html=True)
