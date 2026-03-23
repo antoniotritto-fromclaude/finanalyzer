@@ -573,9 +573,11 @@ def render():
     col1, col2, col3 = st.columns([1, 1, 1])
 
     with col2:
-        if st.button("📥 Scarica Report HTML", type="primary", use_container_width=True):
+        if st.button("📥 Scarica Report", type="primary", use_container_width=True):
             try:
                 from backend.reports.html_report_generator import generate_html_report
+                import streamlit.components.v1 as components
+                import html
 
                 with st.spinner("📝 Generazione report..."):
                     # Generate HTML report
@@ -592,19 +594,34 @@ def render():
 
                     filename = f"Portfolio_{datetime.now().strftime('%Y%m%d_%H%M')}.html"
 
-                st.success("✅ Report generato!")
+                st.success("✅ Report generato! Apertura in una nuova finestra...")
 
-                # Download button
-                st.download_button(
-                    label="📥 Download HTML Report",
-                    data=html_content,
-                    file_name=filename,
-                    mime="text/html",
-                    type="primary",
-                    use_container_width=True,
-                )
+                # Escape HTML content for JavaScript
+                escaped_html = html.escape(html_content)
 
-                st.info("**📖 Apri il file HTML nel browser e usa Ctrl+P → Salva come PDF**")
+                # Open report in new tab using JavaScript
+                components.html(f"""
+                <script>
+                    // Decode HTML entities
+                    const htmlContent = `{escaped_html}`;
+                    const decodedHTML = htmlContent
+                        .replace(/&lt;/g, '<')
+                        .replace(/&gt;/g, '>')
+                        .replace(/&quot;/g, '"')
+                        .replace(/&#x27;/g, "'")
+                        .replace(/&amp;/g, '&');
+
+                    // Open in new window
+                    const newWindow = window.open('', '_blank');
+                    newWindow.document.write(decodedHTML);
+                    newWindow.document.close();
+
+                    // Message for user
+                    document.body.innerHTML = '<div style="padding:20px;text-align:center;font-family:Inter,sans-serif;"><h3 style="color:#10B981;">✅ Report aperto in una nuova finestra!</h3><p style="color:#6B7280;">Se non si apre automaticamente, controlla il blocco popup del browser.</p></div>';
+                </script>
+                """, height=100)
+
+                st.info("**📖 Nel report aperto, usa Ctrl+P (o Cmd+P su Mac) → Salva come PDF**")
 
             except Exception as e:
                 st.error(f"❌ Errore: {e}")
