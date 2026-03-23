@@ -516,6 +516,47 @@ def render():
     </div>
     """, unsafe_allow_html=True)
 
+    # CSS Custom per tab con sfondo petrolio
+    st.markdown("""
+    <style>
+    /* Sfondo petrolio per la barra dei tab */
+    .stTabs [data-baseweb="tab-list"] {
+        background-color: #2F5F7F !important;
+        border-radius: 8px;
+        padding: 8px;
+        gap: 8px;
+    }
+
+    /* Tab non selezionati */
+    .stTabs [data-baseweb="tab"] {
+        background-color: #1E3A44 !important;
+        color: #FFFFFF !important;
+        font-weight: 600 !important;
+        border-radius: 6px !important;
+        padding: 10px 20px !important;
+    }
+
+    /* Tab selezionato */
+    .stTabs [aria-selected="true"] {
+        background-color: #D4AF37 !important;
+        color: #0A1628 !important;
+        font-weight: 700 !important;
+    }
+
+    /* Hover sui tab */
+    .stTabs [data-baseweb="tab"]:hover {
+        background-color: #3A6F8F !important;
+        color: #FFFFFF !important;
+    }
+
+    /* Tab selezionato hover */
+    .stTabs [aria-selected="true"]:hover {
+        background-color: #E5C158 !important;
+        color: #0A1628 !important;
+    }
+    </style>
+    """, unsafe_allow_html=True)
+
     tab_stocks, tab_etf, tab_fondi, tab_comm, tab_crypto = st.tabs([
         "📈 Azioni", "📡 ETF", "🏦 Fondi", "🌾 Commodities", "💰 Crypto"
     ])
