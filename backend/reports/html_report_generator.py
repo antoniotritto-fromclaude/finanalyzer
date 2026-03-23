@@ -335,25 +335,26 @@ body {
 
 
 # ══════════════════════════════════════════════════════════════════════
-# 🖼️ CHART TO IMAGE
+# 🖼️ CHART TO HTML (Interactive Plotly)
 # ══════════════════════════════════════════════════════════════════════
 
-def fig_to_base64(fig: go.Figure, width: int = 1200, height: int = 600) -> str:
+def fig_to_html(fig: go.Figure, width: int = 1200, height: int = 600) -> str:
     """
-    Converte figura Plotly in base64 PNG con tema PRINT-FRIENDLY
+    Converte figura Plotly in HTML interattivo con tema PRINT-FRIENDLY
 
-    Applica automaticamente:
-    - Sfondo bianco
-    - Testo nero/scuro
-    - Legenda leggibile per stampa
+    Vantaggi rispetto a PNG:
+    - Non richiede kaleido/Chrome
+    - Grafici interattivi (hover, zoom)
+    - Stampabili comunque con Ctrl+P
+    - Embedded Plotly.js (nessuna dipendenza esterna)
 
     Args:
         fig: Figura Plotly
-        width: Larghezza immagine
-        height: Altezza immagine
+        width: Larghezza grafico
+        height: Altezza grafico
 
     Returns:
-        str: Base64 encoded PNG
+        str: HTML con grafico embedded
     """
     try:
         # 🎨 APPLICA TEMA PRINT-FRIENDLY (sfondo bianco, testo nero)
@@ -363,27 +364,55 @@ def fig_to_base64(fig: go.Figure, width: int = 1200, height: int = 600) -> str:
         fig_copy = go.Figure(fig)
 
         # Applica tema print-friendly
-        fig_copy.update_layout(**print_theme)
+        fig_copy.update_layout(
+            **print_theme,
+            width=width,
+            height=height,
+            autosize=True,
+        )
 
         # Mantieni il titolo originale se presente
         if fig.layout.title.text:
             fig_copy.update_layout(
                 title=dict(
                     text=fig.layout.title.text,
-                    font=dict(size=16, weight=700, color="#0A1628"),
+                    font=dict(size=16, color="#0A1628"),
                     x=0
                 )
             )
 
-        # Esporta come PNG statico
-        img_bytes = fig_copy.to_image(format="png", width=width, height=height, scale=2)
-        img_base64 = base64.b64encode(img_bytes).decode()
-        return f"data:image/png;base64,{img_base64}"
+        # Esporta come HTML con Plotly.js embedded
+        html_str = fig_copy.to_html(
+            include_plotlyjs='cdn',  # Use CDN for smaller file size
+            config={
+                'displayModeBar': False,  # Hide toolbar for cleaner print
+                'staticPlot': False,  # Keep interactive
+            },
+            div_id=None,
+            full_html=False,  # Only div, not full HTML page
+        )
+
+        return html_str
+
     except Exception as e:
-        # Fallback: crea placeholder SVG
-        svg_content = f'<svg width="{width}" height="{height}"><text x="50%" y="50%" text-anchor="middle" fill="#999">Chart: {str(e)}</text></svg>'
-        svg_base64 = base64.b64encode(svg_content.encode()).decode()
-        return f"data:image/svg+xml;base64,{svg_base64}"
+        # Fallback: placeholder
+        return f"""
+        <div style="width:{width}px;height:{height}px;display:flex;align-items:center;justify-content:center;
+                    background:#F3F4F6;border:2px dashed #D1D5DB;border-radius:8px;">
+            <p style="color:#6B7280;font-size:1rem;">
+                ⚠️ Chart rendering error: {str(e)}
+            </p>
+        </div>
+        """
+
+
+# Legacy function kept for compatibility (now uses HTML instead of base64)
+def fig_to_base64(fig: go.Figure, width: int = 1200, height: int = 600) -> str:
+    """
+    Legacy function - now returns HTML instead of base64 PNG
+    Kept for backward compatibility
+    """
+    return fig_to_html(fig, width, height)
 
 
 # ══════════════════════════════════════════════════════════════════════
@@ -514,13 +543,13 @@ def generate_html_report(
     # 📈 PERFORMANCE CHART
     # ══════════════════════════════════════════════════════════════════
     if performance_chart:
-        img_data = fig_to_base64(performance_chart, width=1200, height=500)
+        chart_html = fig_to_html(performance_chart, width=1200, height=500)
         html += f"""
 <div class="section">
     <h2 class="section-title">Performance Normalizzata</h2>
     <div class="chart-container">
         <div class="chart-title">Andamento Storico (Base 100)</div>
-        <img src="{img_data}" alt="Performance Chart" class="chart-image">
+        {chart_html}
     </div>
 </div>
 """
@@ -529,13 +558,13 @@ def generate_html_report(
     # 🔗 CORRELATION CHART
     # ══════════════════════════════════════════════════════════════════
     if correlation_chart:
-        img_data = fig_to_base64(correlation_chart, width=1000, height=800)
+        chart_html = fig_to_html(correlation_chart, width=1000, height=800)
         html += f"""
 <div class="section">
     <h2 class="section-title">Matrice di Correlazione</h2>
     <div class="chart-container">
         <div class="chart-title">Correlazione tra Asset</div>
-        <img src="{img_data}" alt="Correlation Matrix" class="chart-image">
+        {chart_html}
     </div>
 </div>
 """
@@ -589,11 +618,11 @@ def generate_html_report(
 """
 
         if backtest_chart:
-            img_data = fig_to_base64(backtest_chart, width=1200, height=500)
+            chart_html = fig_to_html(backtest_chart, width=1200, height=500)
             html += f"""
     <div class="chart-container">
         <div class="chart-title">Andamento Portafoglio nel Backtest</div>
-        <img src="{img_data}" alt="Backtest Chart" class="chart-image">
+        {chart_html}
     </div>
 """
 
@@ -651,11 +680,11 @@ def generate_html_report(
         html += "</div>"
 
         if prediction_chart:
-            img_data = fig_to_base64(prediction_chart, width=1200, height=500)
+            chart_html = fig_to_html(prediction_chart, width=1200, height=500)
             html += f"""
     <div class="chart-container">
         <div class="chart-title">Scenari Predittivi a 6 Mesi (Monte Carlo)</div>
-        <img src="{img_data}" alt="Prediction Chart" class="chart-image">
+        {chart_html}
     </div>
 """
 

@@ -228,14 +228,110 @@ def render():
 
     st.markdown("<br>", unsafe_allow_html=True)
 
-    # ── Symbol Input ──────────────────────────────────────────────────
+    # ── Advanced Asset Search ─────────────────────────────────────────
+    with st.expander("🔍 Ricerca Avanzata Asset (Azioni, ETF, Crypto, Commodities)", expanded=False):
+        st.markdown("""
+        <div style="background:#1E3A44;padding:12px;border-left:4px solid #D4AF37;border-radius:8px;margin-bottom:12px;">
+            <span style="color:#FFFFFF;font-size:0.85rem;">
+                🌐 <b>Cerca tra migliaia di asset</b>: Azioni globali, ETF, Criptovalute, Commodities
+            </span>
+        </div>
+        """, unsafe_allow_html=True)
+
+        search_query = st.text_input(
+            "🔎 Cerca asset",
+            placeholder="es: Apple, Bitcoin, Gold, S&P 500 ETF...",
+            key="asset_search_query"
+        )
+
+        if search_query and len(search_query) >= 2:
+            from backend.data_sources.asset_search import search_all_assets
+
+            with st.spinner("🔍 Ricerca in corso..."):
+                results = search_all_assets(search_query, max_results=10)
+
+            # Display results by category
+            tabs = st.tabs(["📈 Azioni", "📡 ETF", "💰 Crypto", "🌾 Commodities"])
+
+            with tabs[0]:  # Stocks
+                if results['stocks']:
+                    for asset in results['stocks']:
+                        col1, col2 = st.columns([4, 1])
+                        with col1:
+                            st.markdown(f"**{asset['symbol']}** - {asset['name']}")
+                            st.caption(f"📍 {asset['exchange']} • {asset['currency']}")
+                        with col2:
+                            if st.button("➕", key=f"add_stock_{asset['symbol']}", help="Aggiungi al portafoglio"):
+                                if asset['symbol'] not in st.session_state["pf_symbols"]:
+                                    st.session_state["pf_symbols"].append(asset['symbol'])
+                                    st.success(f"✅ {asset['symbol']} aggiunto!")
+                                    st.rerun()
+                        st.divider()
+                else:
+                    st.info("Nessuna azione trovata")
+
+            with tabs[1]:  # ETF
+                if results['etfs']:
+                    for asset in results['etfs']:
+                        col1, col2 = st.columns([4, 1])
+                        with col1:
+                            st.markdown(f"**{asset['symbol']}** - {asset['name']}")
+                            st.caption(f"📍 {asset['exchange']} • {asset['currency']}")
+                        with col2:
+                            if st.button("➕", key=f"add_etf_{asset['symbol']}", help="Aggiungi al portafoglio"):
+                                if asset['symbol'] not in st.session_state["pf_symbols"]:
+                                    st.session_state["pf_symbols"].append(asset['symbol'])
+                                    st.success(f"✅ {asset['symbol']} aggiunto!")
+                                    st.rerun()
+                        st.divider()
+                else:
+                    st.info("Nessun ETF trovato")
+
+            with tabs[2]:  # Crypto
+                if results['crypto']:
+                    for asset in results['crypto']:
+                        col1, col2 = st.columns([4, 1])
+                        with col1:
+                            st.markdown(f"**{asset['symbol']}** - {asset['name']}")
+                            st.caption(f"💱 {asset['currency']}")
+                        with col2:
+                            if st.button("➕", key=f"add_crypto_{asset['symbol']}", help="Aggiungi al portafoglio"):
+                                if asset['symbol'] not in st.session_state["pf_symbols"]:
+                                    st.session_state["pf_symbols"].append(asset['symbol'])
+                                    st.success(f"✅ {asset['symbol']} aggiunto!")
+                                    st.rerun()
+                        st.divider()
+                else:
+                    st.info("Nessuna crypto trovata")
+
+            with tabs[3]:  # Commodities
+                if results['commodities']:
+                    for asset in results['commodities']:
+                        col1, col2 = st.columns([4, 1])
+                        with col1:
+                            st.markdown(f"**{asset['symbol']}** - {asset['name']}")
+                            st.caption(f"💵 {asset['currency']}")
+                        with col2:
+                            if st.button("➕", key=f"add_comm_{asset['symbol']}", help="Aggiungi al portafoglio"):
+                                if asset['symbol'] not in st.session_state["pf_symbols"]:
+                                    st.session_state["pf_symbols"].append(asset['symbol'])
+                                    st.success(f"✅ {asset['symbol']} aggiunto!")
+                                    st.rerun()
+                        st.divider()
+                else:
+                    st.info("Nessuna commodity trovata")
+
+    st.markdown("<br>", unsafe_allow_html=True)
+
+    # ── Symbol Input (Direct) ─────────────────────────────────────────
     cols_input = st.columns([3, 1, 1])
 
     with cols_input[0]:
         new_symbol = st.text_input(
-            "Aggiungi Asset (Ticker)",
-            placeholder="es: AAPL, ENI.MI, GC=F",
-            key="new_symbol_input"
+            "⚡ Aggiungi Asset Diretto (Ticker)",
+            placeholder="es: AAPL, ENI.MI, BTC-USD, GC=F",
+            key="new_symbol_input",
+            help="Inserisci direttamente il ticker se lo conosci"
         ).upper().strip()
 
     with cols_input[1]:
