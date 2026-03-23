@@ -293,7 +293,16 @@ def render():
                     max_val = data.max()
                     current_val = data.iloc[-1]
 
-                    # Mini chart MIGLIORATO
+                    # TITOLO SOPRA IL GRAFICO (ben visibile)
+                    st.markdown(f"""
+                    <div style="text-align:center;margin-bottom:8px;">
+                        <div style="font-size:16px;font-weight:800;color:#FFFFFF;margin-bottom:4px;">{name}</div>
+                        <div style="font-size:18px;font-weight:700;color:{color};">{format_number_eur(current_val, decimals=2)}</div>
+                        <div style="font-size:20px;font-weight:800;color:{color};">{'+' if perf_6m >= 0 else ''}{format_percentage(perf_6m, decimals=1)}</div>
+                    </div>
+                    """, unsafe_allow_html=True)
+
+                    # Mini chart MIGLIORATO con ANGOLI ARROTONDATI
                     fig = go.Figure()
                     fig.add_trace(go.Scatter(
                         x=data.index,
@@ -307,27 +316,17 @@ def render():
                     ))
 
                     fig.update_layout(
-                        height=220,
-                        margin=dict(l=45, r=15, t=65, b=40),
+                        height=200,
+                        margin=dict(l=50, r=15, t=10, b=40),
                         paper_bgcolor="rgba(0,0,0,0)",
                         plot_bgcolor="rgba(255,255,255,0.95)",
-                        title=dict(
-                            text=f"<b style='font-size:15px;color:#FFFFFF;'>{name}</b><br>"
-                                 f"<span style='font-size:17px;font-weight:700;color:{color};'>{format_number_eur(current_val, decimals=2)}</span><br>"
-                                 f"<span style='font-size:19px;font-weight:800;color:{color};'>{'+' if perf_6m >= 0 else ''}{format_percentage(perf_6m, decimals=1)}</span>",
-                            font=dict(size=13, color="#FFFFFF"),
-                            x=0.5,
-                            xanchor="center",
-                            y=0.98,
-                            yanchor="top"
-                        ),
                         showlegend=False,
                         xaxis=dict(
                             showgrid=True,
                             gridcolor="#e5e7eb",
                             gridwidth=0.5,
                             showticklabels=True,
-                            tickfont=dict(size=11, color="#1f2937", family="Arial", weight=600),
+                            tickfont=dict(size=12, color="#FFFFFF", family="Arial", weight=700),
                             nticks=5
                         ),
                         yaxis=dict(
@@ -335,22 +334,15 @@ def render():
                             gridcolor="#e5e7eb",
                             gridwidth=0.5,
                             showticklabels=True,
-                            tickfont=dict(size=12, color="#1f2937", family="Arial", weight=600),
+                            tickfont=dict(size=13, color="#FFFFFF", family="Arial", weight=700),
                             tickformat=",.0f"
                         ),
-                        # ANGOLI ARROTONDATI
-                        shapes=[
-                            dict(
-                                type="rect",
-                                xref="paper", yref="paper",
-                                x0=0, y0=0, x1=1, y1=1,
-                                line=dict(color="rgba(0,0,0,0)", width=0),
-                                fillcolor="rgba(0,0,0,0)",
-                                layer="below"
-                            )
-                        ]
                     )
-                    st.plotly_chart(fig, width="stretch", config={"displayModeBar": False})
+
+                    # Wrapper con ANGOLI ARROTONDATI
+                    st.markdown('<div style="border-radius:12px;overflow:hidden;border:2px solid #D4AF37;">', unsafe_allow_html=True)
+                    st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": False})
+                    st.markdown('</div>', unsafe_allow_html=True)
 
     st.markdown("<br>", unsafe_allow_html=True)
 
