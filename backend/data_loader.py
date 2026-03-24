@@ -273,8 +273,8 @@ def load_prices_smart(symbols: List[str], period: str = "3y") -> pd.DataFrame:
     # Crea DataFrame unificato
     if prices:
         df = pd.DataFrame(prices)
-        # Allinea date e riempi NaN
-        df = df.fillna(method='ffill').fillna(method='bfill')
+        # Allinea date e riempi NaN (forward fill then backward fill)
+        df = df.ffill().bfill()
         logger.info(f"✅ Dataset completo: {len(df)} giorni, {len(df.columns)} asset")
         return df
     else:

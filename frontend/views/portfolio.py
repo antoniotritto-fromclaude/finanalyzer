@@ -583,8 +583,12 @@ def render():
 
     st.markdown('<h2 style="color:#FFFFFF !important;font-size:1.8rem;font-weight:800;margin:40px 0 20px 0;padding-bottom:12px;border-bottom:2px solid #D4AF37;">📈 Performance & Correlazione</h2>', unsafe_allow_html=True)
 
-    # Normalized performance
-    norm = (prices_df / prices_df.iloc[0]) * 100
+    # Normalized performance - use first valid value for each column to avoid NaN
+    # This ensures stocks that start trading later still appear in the chart
+    first_valid = prices_df.apply(lambda col: col.dropna().iloc[0] if not col.dropna().empty else 1)
+    norm = (prices_df / first_valid) * 100
+    # Remove any remaining NaN at the start of each series
+    norm = norm.bfill().ffill()
     fig_perf = line_chart(norm, title="Performance Normalizzata (Base 100)", normalize=False, height=400)
     fig_perf.update_layout(
         paper_bgcolor="rgba(0,0,0,0)",
