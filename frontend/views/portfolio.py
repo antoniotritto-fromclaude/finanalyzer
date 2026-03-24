@@ -386,19 +386,138 @@ def render():
         st.info("👆 **Aggiungi almeno 2 asset per iniziare l'analisi**")
         return
 
-    # Show current symbols as chips
+    # Show current symbols as chips (migliore contrasto)
     st.markdown("**Portfolio corrente:**")
     chips_html = " ".join([
-        f'<span style="display:inline-block;background:#334155;color:#E5E7EB;padding:8px 16px;border-radius:20px;margin:4px;font-weight:600;">{s}</span>'
+        f'<span style="display:inline-block;background:#2F5F7F;color:#FFFFFF;padding:8px 16px;border-radius:20px;margin:4px;font-weight:600;border:1px solid #D4AF37;">{s}</span>'
         for s in symbols
     ])
     st.markdown(chips_html, unsafe_allow_html=True)
 
     st.markdown("<br>", unsafe_allow_html=True)
+
+    # ══════════════════════════════════════════════════════════════════
+    # 💰 STEP 2: CAPITAL & WEIGHTS CONFIGURATION
+    # ══════════════════════════════════════════════════════════════════
+
+    st.markdown('<h3 style="color:#FFFFFF !important;font-size:1.5rem;font-weight:700;margin:20px 0;">💰 Capitale e Pesi Portfolio</h3>', unsafe_allow_html=True)
+
+    col_capital, col_distrib = st.columns([1, 1])
+
+    with col_capital:
+        initial_capital = st.number_input(
+            "💶 Capitale Iniziale (EUR)",
+            min_value=100.0,
+            max_value=10000000.0,
+            value=10000.0,
+            step=100.0,
+            help="Capitale totale da investire in Euro"
+        )
+
+    with col_distrib:
+        weight_mode = st.selectbox(
+            "⚖️ Distribuzione Pesi",
+            ["Equamente", "Personalizzata"],
+            help="Equamente: peso uguale per tutti. Personalizzata: scegli % per ogni asset"
+        )
+
+    st.markdown("<br>", unsafe_allow_html=True)
+
+    # Initialize weights if not exists
+    if "pf_weights" not in st.session_state:
+        st.session_state["pf_weights"] = {}
+
+    weights = {}
+
+    if weight_mode == "Equamente":
+        # Equal weights
+        equal_weight = 1.0 / len(symbols)
+        for symbol in symbols:
+            weights[symbol] = equal_weight
+
+        # Display weights table
+        st.markdown("""
+        <div style="background:#1E3A44;padding:12px;border-left:4px solid #D4AF37;border-radius:8px;margin-bottom:12px;">
+            <span style="color:#FFFFFF;font-size:0.9rem;"><b>✅ Distribuzione Equa</b>: {:.1f}% per ogni asset</span>
+        </div>
+        """.format(equal_weight * 100), unsafe_allow_html=True)
+
+    else:
+        # Custom weights
+        st.markdown("""
+        <div style="background:#1E3A44;padding:12px;border-left:4px solid #D4AF37;border-radius:8px;margin-bottom:12px;">
+            <span style="color:#FFFFFF;font-size:0.9rem;"><b>⚖️ Distribuzione Personalizzata</b>: Imposta il peso % per ogni asset</span>
+        </div>
+        """, unsafe_allow_html=True)
+
+        st.markdown("**Imposta i pesi (%):**")
+
+        cols = st.columns(min(len(symbols), 3))
+
+        for i, symbol in enumerate(symbols):
+            with cols[i % 3]:
+                # Get previous weight or default
+                prev_weight = st.session_state["pf_weights"].get(symbol, 100.0 / len(symbols))
+
+                weight_pct = st.number_input(
+                    f"📊 {symbol}",
+                    min_value=0.0,
+                    max_value=100.0,
+                    value=prev_weight * 100,
+                    step=1.0,
+                    key=f"weight_{symbol}",
+                    help=f"Peso percentuale per {symbol}"
+                )
+                weights[symbol] = weight_pct / 100.0
+
+        # Validate total weight
+        total_weight = sum(weights.values())
+
+        if abs(total_weight - 1.0) > 0.01:  # Allow 1% tolerance
+            st.warning(f"⚠️ **Somma pesi: {total_weight*100:.1f}%** (deve essere 100%)")
+            st.info("💡 Aggiusta i pesi fino a raggiungere 100%")
+        else:
+            st.success(f"✅ **Somma pesi: {total_weight*100:.1f}%** - Perfetto!")
+
+    # Save weights to session state
+    st.session_state["pf_weights"] = weights
+
+    # ── Allocation Table ──────────────────────────────────────────────
+    st.markdown("<br>", unsafe_allow_html=True)
+    st.markdown("**📋 Allocazione Capitale:**")
+
+    allocation_data = []
+    for symbol in symbols:
+        weight = weights[symbol]
+        amount = initial_capital * weight
+        allocation_data.append({
+            "Asset": symbol,
+            "Peso %": f"{weight*100:.1f}%",
+            "Importo €": f"€{amount:,.2f}".replace(",", ".")
+        })
+
+    # Display as DataFrame
+    df_allocation = pd.DataFrame(allocation_data)
+
+    st.markdown("""
+    <style>
+    .stDataFrame {
+        width: 100% !important;
+    }
+    .stDataFrame td, .stDataFrame th {
+        color: #FFFFFF !important;
+        background-color: #1E3A44 !important;
+    }
+    </style>
+    """, unsafe_allow_html=True)
+
+    st.dataframe(df_allocation, use_container_width=True, hide_index=True)
+
+    st.markdown("<br>", unsafe_allow_html=True)
     st.divider()
 
     # ══════════════════════════════════════════════════════════════════
-    # 📊 STEP 2: LOAD DATA & ANALYSIS
+    # 📊 STEP 3: LOAD DATA & ANALYSIS
     # ══════════════════════════════════════════════════════════════════
 
     if len(symbols) < 2:
@@ -512,7 +631,7 @@ def render():
                 weights=weights,
                 start_date=start_date.strftime("%Y-%m-%d"),
                 end_date=end_date.strftime("%Y-%m-%d"),
-                initial_value=10000.0,
+                initial_value=initial_capital,
             )
 
         # Metrics grid
@@ -601,7 +720,7 @@ def render():
                 scenarios = predictor.predict_portfolio_scenarios(
                     weights=weights,
                     months=6,
-                    initial_value=10000.0,
+                    initial_value=initial_capital,
                     num_simulations=1000,
                 )
 
@@ -681,7 +800,7 @@ def render():
                         portfolio_name=f"Portfolio_{datetime.now().strftime('%Y%m%d')}",
                         symbols=symbols,
                         weights=weights,
-                        initial_value=10000.0,
+                        initial_value=initial_capital,
                         performance_chart=fig_perf if 'fig_perf' in locals() else None,
                         correlation_chart=fig_corr if 'fig_corr' in locals() else None,
                         backtest_chart=fig_bt if 'fig_bt' in locals() else None,
