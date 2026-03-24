@@ -125,13 +125,13 @@ CHART_THEME_LUXURY = {
     },
 
     "legend": {
-        "bgcolor": "rgba(255,255,255,0.9)",
-        "bordercolor": COLORS["gray_200"],
-        "borderwidth": 1,
+        "bgcolor": "#2F5F7F",  # Petrolio (teal) background
+        "bordercolor": "#D4AF37",  # Gold border (luxury)
+        "borderwidth": 2,
         "font": {
             "family": "Inter, sans-serif",
             "size": 12,
-            "color": COLORS["text_primary"],
+            "color": "#FFFFFF",  # White text (high contrast on teal)
         },
         "orientation": "h",
         "yanchor": "bottom",
