@@ -27,6 +27,26 @@ st.markdown(get_luxury_css(), unsafe_allow_html=True)
 # ── Import pagine ─────────────────────────────────────────────────────────────
 from frontend.views import dashboard, screener, fundamentals, portfolio
 
+# ── Load Persistent Data ──────────────────────────────────────────────────────
+from backend.storage.data_manager import load_portfolios, load_custom_funds
+
+# Initialize session state with persistent data (only once per session)
+if "data_loaded" not in st.session_state:
+    # Load saved portfolios
+    saved_portfolios = load_portfolios()
+    if saved_portfolios:
+        st.session_state.saved_portfolios = saved_portfolios
+
+    # Load custom funds
+    custom_funds = load_custom_funds()
+    if custom_funds:
+        st.session_state.custom_funds = custom_funds
+    else:
+        st.session_state.custom_funds = []
+
+    # Mark as loaded
+    st.session_state.data_loaded = True
+
 # ── Sidebar Navigation ────────────────────────────────────────────────────────
 with st.sidebar:
     # Logo

@@ -458,11 +458,12 @@ def render():
                 # Crea ID univoco per fondo manuale
                 fund_id = f"MANUAL_{manual_isin if manual_isin else manual_name.replace(' ', '_')}"
 
-                # Salva dati fondo in session_state
-                if "manual_funds" not in st.session_state:
-                    st.session_state["manual_funds"] = {}
+                # Salva dati fondo in session_state e persistent storage
+                if "custom_funds" not in st.session_state:
+                    st.session_state["custom_funds"] = []
 
-                st.session_state["manual_funds"][fund_id] = {
+                fund_data = {
+                    "id": fund_id,
                     "name": manual_name,
                     "isin": manual_isin or "N/A",
                     "nav": manual_nav,
@@ -481,6 +482,16 @@ def render():
                     "source": "Manual Entry",
                     "added_at": pd.Timestamp.now().isoformat()
                 }
+
+                # Add to session state (as list)
+                st.session_state["custom_funds"].append(fund_data)
+
+                # Save to persistent storage
+                from backend.storage.data_manager import add_custom_fund
+                if add_custom_fund(fund_data):
+                    pass  # Success
+                else:
+                    st.error("❌ Errore nel salvataggio persistente del fondo")
 
                 # Aggiungi al portafoglio
                 if "pf_symbols" not in st.session_state:

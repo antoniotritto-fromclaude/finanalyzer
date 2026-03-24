@@ -372,7 +372,14 @@ def render():
                     "weights": st.session_state.get("pf_weights", {}).copy(),
                     "created_at": datetime.now().strftime("%Y-%m-%d %H:%M")
                 }
-                st.success(f"✅ Portafoglio '{portfolio_name}' salvato con successo!")
+
+                # Save to persistent storage
+                from backend.storage.data_manager import save_portfolios
+                if save_portfolios(st.session_state.saved_portfolios):
+                    st.success(f"✅ Portafoglio '{portfolio_name}' salvato con successo!")
+                else:
+                    st.error(f"❌ Errore nel salvataggio del portafoglio")
+
                 st.rerun()
             elif not portfolio_name:
                 st.warning("⚠️ Inserisci un nome per il portafoglio")
