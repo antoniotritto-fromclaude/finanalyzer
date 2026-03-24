@@ -142,7 +142,7 @@ def _load_top_movers():
 
     # Ordina per variazione percentuale (assoluta) decrescente
     results.sort(key=lambda x: abs(x["Var%"]), reverse=True)
-    return pd.DataFrame(results[:6])  # Top 6
+    return pd.DataFrame(results[:10])  # Top 10
 
 
 @st.cache_data(ttl=600)  # Cache 10 minuti
