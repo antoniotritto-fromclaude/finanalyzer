@@ -486,6 +486,11 @@ def render():
                 # Add to session state (as list)
                 st.session_state["custom_funds"].append(fund_data)
 
+                # Add to manual_funds dict for data_loader compatibility
+                if "manual_funds" not in st.session_state:
+                    st.session_state["manual_funds"] = {}
+                st.session_state["manual_funds"][fund_id] = fund_data
+
                 # Save to persistent storage
                 from backend.storage.data_manager import add_custom_fund
                 if add_custom_fund(fund_data):

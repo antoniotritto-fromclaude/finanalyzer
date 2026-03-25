@@ -44,6 +44,15 @@ if "data_loaded" not in st.session_state:
     else:
         st.session_state.custom_funds = []
 
+    # Convert custom_funds list to manual_funds dict for data_loader compatibility
+    # manual_funds uses fund_id (MANUAL_XXX) as key
+    manual_funds_dict = {}
+    for fund in custom_funds:
+        fund_id = fund.get("id")  # Should be MANUAL_{isin} format
+        if fund_id and fund_id.startswith("MANUAL_"):
+            manual_funds_dict[fund_id] = fund
+    st.session_state.manual_funds = manual_funds_dict
+
     # Mark as loaded
     st.session_state.data_loaded = True
 
