@@ -13,6 +13,7 @@ from backend.data_collectors.morningstar import MorningstarCollector
 from backend.data_collectors.justetf import justetf_collector
 from backend.data_collectors.investing import investing_collector
 from backend.cache.funds_cache import funds_cache
+from backend.utils.currency_converter import convert_series_to_eur, get_currency_symbol
 
 logger = logging.getLogger(__name__)
 
@@ -275,7 +276,29 @@ def load_prices_smart(symbols: List[str], period: str = "3y") -> pd.DataFrame:
         df = pd.DataFrame(prices)
         # Allinea date e riempi NaN (forward fill then backward fill)
         df = df.ffill().bfill()
-        logger.info(f"✅ Dataset completo: {len(df)} giorni, {len(df.columns)} asset")
+
+        # Converti tutti i prezzi in EUR
+        logger.info("💶 Conversione prezzi in EUR...")
+        for symbol in df.columns:
+            try:
+                # Determina la valuta del simbolo
+                currency = "EUR"  # Default for ISINs and manual funds
+
+                # Per ticker Yahoo Finance, ottieni la valuta
+                if not is_isin(symbol) and not symbol.startswith("MANUAL_"):
+                    currency = get_currency_symbol(symbol)
+
+                # Converti se necessario
+                if currency != "EUR":
+                    logger.info(f"  → Conversione {symbol} da {currency} a EUR")
+                    df[symbol] = convert_series_to_eur(df[symbol], currency)
+                else:
+                    logger.debug(f"  → {symbol} già in EUR, nessuna conversione necessaria")
+
+            except Exception as e:
+                logger.warning(f"  ⚠️  Errore conversione {symbol}: {e} - mantengo prezzi originali")
+
+        logger.info(f"✅ Dataset completo: {len(df)} giorni, {len(df.columns)} asset (prezzi in EUR)")
         return df
     else:
         logger.warning("❌ Nessun dato caricato")
@@ -319,12 +342,19 @@ def get_latest_price(symbol: str) -> Dict:
                 last_price = hist["Close"].iloc[-1]
                 prev_price = hist["Close"].iloc[-2] if len(hist) > 1 else last_price
                 info = ticker.info
+                original_currency = info.get("currency", "USD")
+
+                # Converti in EUR
+                from backend.utils.currency_converter import convert_to_eur
+                last_price_eur = convert_to_eur(float(last_price), original_currency)
+                prev_price_eur = convert_to_eur(float(prev_price), original_currency)
+
                 return {
                     "symbol": symbol,
-                    "price": float(last_price),
-                    "change": float(last_price - prev_price),
-                    "change_pct": float((last_price - prev_price) / prev_price * 100) if prev_price != 0 else 0,
-                    "currency": info.get("currency", "USD"),
+                    "price": last_price_eur,
+                    "change": last_price_eur - prev_price_eur,
+                    "change_pct": float((last_price_eur - prev_price_eur) / prev_price_eur * 100) if prev_price_eur != 0 else 0,
+                    "currency": "EUR",
                     "source": "Yahoo Finance",
                 }
         except:

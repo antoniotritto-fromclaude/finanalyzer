@@ -386,6 +386,56 @@ def render():
             elif not st.session_state["pf_symbols"]:
                 st.warning("⚠️ Aggiungi almeno un asset prima di salvare")
 
+    # ── Load/Delete Saved Portfolios ──────────────────────────────────
+    if st.session_state.get("saved_portfolios"):
+        st.markdown("<br>", unsafe_allow_html=True)
+        with st.expander("📁 Portafogli Salvati", expanded=False):
+            st.markdown("**Gestisci i tuoi portafogli salvati:**")
+            st.markdown("<br>", unsafe_allow_html=True)
+
+            portfolios_to_delete = []
+
+            for pf_name, pf_data in st.session_state.saved_portfolios.items():
+                col1, col2, col3 = st.columns([3, 1, 1])
+
+                with col1:
+                    symbols_str = ", ".join(pf_data.get("symbols", []))
+                    created_at = pf_data.get("created_at", "N/D")
+                    st.markdown(f"""
+                    <div style="background:#2F5F7F;padding:12px;border-radius:8px;border-left:4px solid #D4AF37;">
+                        <div style="color:#FFFFFF;font-weight:700;font-size:1rem;">{pf_name}</div>
+                        <div style="color:#E5E7EB;font-size:0.85rem;margin-top:4px;">📊 {symbols_str}</div>
+                        <div style="color:#9CA3AF;font-size:0.75rem;margin-top:4px;">📅 {created_at}</div>
+                    </div>
+                    """, unsafe_allow_html=True)
+
+                with col2:
+                    if st.button("📥 Carica", key=f"load_{pf_name}", type="secondary"):
+                        st.session_state["pf_symbols"] = pf_data.get("symbols", []).copy()
+                        st.session_state["pf_weights"] = pf_data.get("weights", {}).copy()
+                        st.success(f"✅ Portafoglio '{pf_name}' caricato!")
+                        st.rerun()
+
+                with col3:
+                    if st.button("🗑️ Elimina", key=f"delete_{pf_name}", type="secondary"):
+                        portfolios_to_delete.append(pf_name)
+
+                st.markdown("<br>", unsafe_allow_html=True)
+
+            # Delete portfolios after iteration
+            if portfolios_to_delete:
+                from backend.storage.data_manager import delete_portfolio, save_portfolios
+                for pf_name in portfolios_to_delete:
+                    if pf_name in st.session_state.saved_portfolios:
+                        del st.session_state.saved_portfolios[pf_name]
+                        st.success(f"✅ Portafoglio '{pf_name}' eliminato!")
+
+                # Save updated portfolios
+                if save_portfolios(st.session_state.saved_portfolios):
+                    st.rerun()
+                else:
+                    st.error("❌ Errore durante l'eliminazione del portafoglio")
+
     # ── Current Portfolio ─────────────────────────────────────────────
     symbols = st.session_state["pf_symbols"]
 

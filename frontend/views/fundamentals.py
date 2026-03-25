@@ -105,19 +105,26 @@ def render():
     # ── Header titolo ──────────────────────────────────────────────────────────
     name  = info.get("longName", info.get("shortName", symbol))
     exch  = info.get("exchange", "")
-    curr  = info.get("currency", "")
-    last  = hist_1y["Close"].iloc[-1]
-    prev  = hist_1y["Close"].iloc[-2] if len(hist_1y) > 1 else last
-    chg   = (last - prev) / prev * 100
+    original_curr = info.get("currency", "")
+
+    # Convert prices to EUR
+    from backend.utils.currency_converter import convert_to_eur
+    last_original = hist_1y["Close"].iloc[-1]
+    prev_original = hist_1y["Close"].iloc[-2] if len(hist_1y) > 1 else last_original
+
+    # Note: prices from data_loader are already in EUR, so we use them directly
+    last = last_original
+    prev = prev_original
+    chg = (last - prev) / prev * 100
 
     col_h1, col_h2 = st.columns([3, 1])
     with col_h1:
         st.markdown(f"""
         <div class="fin-card" style="padding:18px 22px;">
-            <div style="font-size:0.78rem;color:#9ca3af;font-weight:600;letter-spacing:0.5px;">{exch} · {curr}</div>
-            <div style="font-size:1.6rem;font-weight:800;color:#0f1c2e;">{name}</div>
+            <div style="font-size:0.78rem;color:#FFFFFF;font-weight:600;letter-spacing:0.5px;">{exch} · EUR{' (convertito da ' + original_curr + ')' if original_curr and original_curr != 'EUR' else ''}</div>
+            <div style="font-size:1.6rem;font-weight:800;color:#FFFFFF;">{name}</div>
             <div style="font-size:1.25rem;font-weight:700;color:#2471c8;">
-                {curr} {format_number_eur(last, decimals=2)}
+                EUR {format_number_eur(last, decimals=2)}
                 &nbsp;<span class="{'delta-pos' if chg>=0 else 'delta-neg'}" style="font-size:1rem;">
                     {'▲' if chg>=0 else '▼'} {format_percentage(abs(chg), decimals=2)}
                 </span>
@@ -152,28 +159,51 @@ def render():
 
     # ── Grafici ───────────────────────────────────────────────────────────────
     st.markdown("<br>", unsafe_allow_html=True)
+
+    # Custom CSS for tabs with petrolio (teal) background
+    st.markdown("""
+    <style>
+    .stTabs [data-baseweb="tab-list"] {
+        background-color: #2F5F7F !important;
+        border-radius: 8px !important;
+        padding: 4px !important;
+    }
+    .stTabs [data-baseweb="tab"] {
+        color: #FFFFFF !important;
+        font-weight: 600 !important;
+    }
+    .stTabs [aria-selected="true"] {
+        background-color: rgba(255, 255, 255, 0.2) !important;
+        border-radius: 6px !important;
+    }
+    </style>
+    """, unsafe_allow_html=True)
+
     tab_1y, tab_5y, tab_candle = st.tabs(["📈 Prezzo 1 Anno", "📊 Storico 5 Anni", "🕯️ Candlestick"])
 
     with tab_1y:
         if not hist_1y.empty:
             df_plot = hist_1y[["Close"]].rename(columns={"Close": symbol})
             fig = line_chart(df_plot, title=f"{symbol} – Prezzo Ultimi 12 Mesi",
-                             y_title=f"Prezzo ({curr})", filled=True, height=340)
-            fig.update_layout(paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(255,255,255,0.85)")
+                             y_title="Prezzo (EUR)", filled=True, height=340)
+            fig.update_layout(paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="#FFFFFF",
+                            font=dict(color="#0f1c2e"))
             st.plotly_chart(fig, width="stretch", config={"displayModeBar": False})
 
     with tab_5y:
         if not hist_5y.empty:
             df_plot = hist_5y[["Close"]].rename(columns={"Close": symbol})
             fig = line_chart(df_plot, title=f"{symbol} – Storico 5 Anni",
-                             y_title=f"Prezzo ({curr})", filled=True, height=340)
-            fig.update_layout(paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(255,255,255,0.85)")
+                             y_title="Prezzo (EUR)", filled=True, height=340)
+            fig.update_layout(paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="#FFFFFF",
+                            font=dict(color="#0f1c2e"))
             st.plotly_chart(fig, width="stretch", config={"displayModeBar": False})
 
     with tab_candle:
         if not hist_1y.empty:
             fig = candle_chart(hist_1y, title=f"{symbol} – Candlestick", height=360)
-            fig.update_layout(paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(255,255,255,0.85)")
+            fig.update_layout(paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="#FFFFFF",
+                            font=dict(color="#0f1c2e"))
             st.plotly_chart(fig, width="stretch", config={"displayModeBar": False})
 
     # ── Statistiche rendimento ────────────────────────────────────────────────
