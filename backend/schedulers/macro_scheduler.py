@@ -24,7 +24,7 @@ REPORT_CONFIG = {
     "generation_advance_minutes": 90,  # 1h 30min
 
     # Giorni attivi (1=Lunedì, 7=Domenica)
-    "active_days": [1, 2, 3, 4, 5],  # Lun-Ven
+    "active_days": [1, 4],  # Lunedì e Giovedì
 
     # Directory output
     "output_dir": Path(__file__).parent.parent.parent / "reports" / "macro",
