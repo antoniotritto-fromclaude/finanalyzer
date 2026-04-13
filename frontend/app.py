@@ -25,7 +25,7 @@ st.markdown(MAIN_CSS, unsafe_allow_html=True)
 st.markdown(get_luxury_css(), unsafe_allow_html=True)
 
 # ── Import pagine ─────────────────────────────────────────────────────────────
-from frontend.views import dashboard, screener, fundamentals, portfolio
+from frontend.views import dashboard, screener, fundamentals, portfolio, macro_report
 
 # ── Load Persistent Data ──────────────────────────────────────────────────────
 from backend.storage.data_manager import load_portfolios, load_custom_funds
@@ -84,6 +84,7 @@ with st.sidebar:
             "🔍 Screener",
             "📊 Analisi Titolo",
             "💼 Portafoglio",
+            "🌍 Macro Report",
         ],
         label_visibility="collapsed",
     )
@@ -191,6 +192,8 @@ try:
         fundamentals.render()
     elif "Portafoglio" in page:
         portfolio.render()
+    elif "Macro Report" in page:
+        macro_report.render()
     else:
         st.error(f"❌ Pagina non trovata: {page}")
 except Exception as e:
