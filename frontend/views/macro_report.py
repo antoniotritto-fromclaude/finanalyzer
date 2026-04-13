@@ -25,8 +25,103 @@ def render():
 
     st.markdown("<br>", unsafe_allow_html=True)
 
+    # ══════════════════════════════════════════════════════════════════
+    # SCHEDULER CONFIGURATION
+    # ══════════════════════════════════════════════════════════════════
+
+    st.markdown('<h2 style="color:#FFFFFF !important;font-size:1.5rem;font-weight:700;margin:20px 0;">⏰ Configurazione Generazione Automatica</h2>', unsafe_allow_html=True)
+
+    with st.expander("⚙️ Impostazioni Scheduler", expanded=True):
+        from backend.schedulers.macro_scheduler import get_scheduler_info, REPORT_CONFIG
+
+        info = get_scheduler_info()
+
+        col_a, col_b = st.columns(2)
+
+        with col_a:
+            st.markdown("""
+            <div style="background:#2F5F7F;padding:16px;border-radius:8px;">
+                <div style="color:#9CA3AF;font-size:0.85rem;margin-bottom:8px;">🎯 Orario Pubblicazione Target</div>
+                <div style="color:#FFFFFF;font-size:1.8rem;font-weight:800;">{}</div>
+                <div style="color:#E5E7EB;font-size:0.8rem;margin-top:8px;">Quando vuoi ricevere il report</div>
+            </div>
+            """.format(info["target_publish_time"]), unsafe_allow_html=True)
+
+        with col_b:
+            st.markdown("""
+            <div style="background:#2F5F7F;padding:16px;border-radius:8px;">
+                <div style="color:#9CA3AF;font-size:0.85rem;margin-bottom:8px;">🕐 Orario Generazione</div>
+                <div style="color:#FFFFFF;font-size:1.8rem;font-weight:800;">{}</div>
+                <div style="color:#E5E7EB;font-size:0.8rem;margin-top:8px;">1h 30min prima (anticipo {}min)</div>
+            </div>
+            """.format(info["calculated_generation_time"], info["generation_advance_minutes"]), unsafe_allow_html=True)
+
+        st.markdown("<br>", unsafe_allow_html=True)
+
+        # Info dettagliate
+        col_c, col_d, col_e = st.columns(3)
+
+        with col_c:
+            st.metric("📅 Prossima Generazione", info["next_run"])
+
+        with col_d:
+            days_str = ", ".join(["Lun", "Mar", "Mer", "Gio", "Ven", "Sab", "Dom"][d-1] for d in info["active_days"])
+            st.metric("📆 Giorni Attivi", days_str)
+
+        with col_e:
+            st.metric("📊 Report Salvati", f"{info['reports_stored']}/{info['keep_last_n']}")
+
+        st.markdown("<br>", unsafe_allow_html=True)
+
+        # Note
+        st.info("""
+        **ℹ️ Come Funziona:**
+
+        Il sistema genera automaticamente il report **1 ora e 30 minuti prima** dell'orario di pubblicazione desiderato.
+
+        - **Orario pubblicazione**: 08:15 (esempio)
+        - **Orario generazione**: 06:45 (automatico)
+        - **Report salvato in**: `/reports/macro/`
+        - **Giorni attivi**: Lun-Ven (personalizzabile)
+
+        I report vengono salvati automaticamente e sono pronti per essere inviati via Telegram, WhatsApp o Email.
+        """)
+
+        # Modifica configurazione
+        st.markdown("**🔧 Modifica Orari:**", unsafe_allow_html=True)
+
+        col_mod1, col_mod2 = st.columns(2)
+
+        with col_mod1:
+            new_publish_time = st.time_input(
+                "Orario Pubblicazione",
+                value=datetime.strptime(REPORT_CONFIG["target_publish_time"], "%H:%M").time(),
+                help="Quando vuoi ricevere il report pronto"
+            )
+
+        with col_mod2:
+            new_advance = st.number_input(
+                "Anticipo (minuti)",
+                min_value=30,
+                max_value=180,
+                value=REPORT_CONFIG["generation_advance_minutes"],
+                step=15,
+                help="Quanto tempo prima generare il report"
+            )
+
+        if st.button("💾 Salva Configurazione", type="secondary"):
+            # Aggiorna configurazione
+            REPORT_CONFIG["target_publish_time"] = new_publish_time.strftime("%H:%M")
+            REPORT_CONFIG["generation_advance_minutes"] = new_advance
+
+            # Salva su file (opzionale - persistenza)
+            st.success("✅ Configurazione aggiornata! Riavvia lo scheduler per applicare le modifiche.")
+            st.rerun()
+
+    st.markdown("<br>", unsafe_allow_html=True)
+
     # Bottoni azione
-    col1, col2, col3 = st.columns([2, 2, 1])
+    col1, col2, col3, col4 = st.columns([2, 2, 2, 1])
 
     with col1:
         if st.button("📊 Genera Report Adesso", type="primary", use_container_width=True):
@@ -39,13 +134,30 @@ def render():
                     label="⬇️ Download Report",
                     data=st.session_state["last_report"],
                     file_name=f"macro_report_{datetime.now().strftime('%Y%m%d_%H%M')}.txt",
-                    mime="text/plain"
+                    mime="text/plain",
+                    use_container_width=True
                 )
             else:
                 st.warning("⚠️ Genera prima un report")
 
     with col3:
-        auto_refresh = st.checkbox("🔄 Auto-refresh", help="Aggiorna automaticamente ogni 5 minuti")
+        if st.button("📱 Esporta per Telegram", type="secondary", use_container_width=True):
+            if "last_report" in st.session_state:
+                from backend.schedulers.macro_scheduler import export_for_messaging
+                # Salva per export
+                telegram_text = st.session_state["last_report"]
+                st.download_button(
+                    label="⬇️ Download Telegram",
+                    data=telegram_text,
+                    file_name=f"telegram_report_{datetime.now().strftime('%Y%m%d_%H%M')}.txt",
+                    mime="text/plain",
+                    use_container_width=True
+                )
+            else:
+                st.warning("⚠️ Genera prima un report")
+
+    with col4:
+        auto_refresh = st.checkbox("🔄 Auto", help="Aggiorna automaticamente ogni 5 minuti")
 
     st.markdown("<br>", unsafe_allow_html=True)
 
