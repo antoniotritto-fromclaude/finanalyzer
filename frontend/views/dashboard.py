@@ -1,6 +1,13 @@
 """
 Dashboard - Pagina principale con overview mercati
 """
+import sys, os
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+try:
+    import fix_multitasking  # noqa
+except Exception:
+    pass
+
 import streamlit as st
 import pandas as pd
 import numpy as np
@@ -85,6 +92,9 @@ def _load_market_indices():
             })
             time.sleep(0.1)  # Rate limiting
         except Exception as e:
+            err_msg = str(e)
+            if "403" in err_msg or "Forbidden" in err_msg or "allowlist" in err_msg or "NoneType" in err_msg or "Bad credentials" in err_msg:
+                continue  # Silenzioso: problema di rete/IP, non mostrare warning per ogni indice
             st.warning(f"⚠️ Errore caricamento {idx['name']}: {e}")
             continue
     return results
@@ -239,7 +249,14 @@ def render():
         market_data = _load_market_indices()
 
     if not market_data:
-        st.error("❌ Impossibile caricare dati di mercato")
+        st.warning("""
+        ⚠️ **Dati di mercato non disponibili** — Yahoo Finance non è raggiungibile da questo server (IP bloccato).
+
+        **Soluzioni:**
+        - Accedi all'app da un altro ambiente (es. localhost) dove Yahoo Finance è accessibile
+        - Configura un proxy nelle impostazioni di yfinance
+        - Usa i dati nel **Portfolio** tramite ticker caricati manualmente
+        """)
         return
 
     cols = st.columns(len(market_data))
