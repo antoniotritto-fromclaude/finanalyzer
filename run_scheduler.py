@@ -18,6 +18,12 @@ from pathlib import Path
 # Add project root to path
 sys.path.insert(0, str(Path(__file__).parent))
 
+# ── Fix multitasking PRIMA di importare yfinance ──────────────────────────
+try:
+    import fix_multitasking  # noqa
+except Exception:
+    pass
+
 from backend.schedulers.macro_scheduler import (
     start_scheduler,
     run_now,
